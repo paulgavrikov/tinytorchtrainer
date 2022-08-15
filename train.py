@@ -163,6 +163,7 @@ if __name__ == "__main__":
     steps = 0
 
     parser = ArgumentParser()
+    
     parser.add_argument("--model", type=str)
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--dataset_dir", type=str,

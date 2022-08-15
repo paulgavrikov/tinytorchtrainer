@@ -13,7 +13,7 @@ class CSVLogger:
         self.rows = []
         self.log_file = log_file 
 
-    def log(epoch, step, row):
+    def log(self, epoch, step, row):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
         print(row)
         self.rows.append(row)
@@ -26,15 +26,15 @@ class CheckpointCallback:
     
     def __init__(self, path, mode="all"):
         
-        assert mode is in ["all", None]
+        assert mode in ["all", None]
         
         self.path = path 
         self.mode = mode
         os.makedirs(self.path, exist_ok=True)
 
-    def save(epoch, step, model, metrics):
-        if mode == "all":
-            out_path = os.path.join(self.path, CKPT_PATTERN.replace("%epoch%", epoch).replace("%step%", step))
+    def save(self, epoch, step, model, metrics):
+        if self.mode == "all":
+            out_path = os.path.join(self.path, self.CKPT_PATTERN.replace("%epoch%", epoch).replace("%step%", step))
             torch.save({"state_dict": model.state_dict(), "metrics": metrics, "epoch": epoch, "step": step}, out_path)
 
 
