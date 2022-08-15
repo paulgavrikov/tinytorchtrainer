@@ -38,7 +38,7 @@ class Trainer:
         self.epoch = 0
         self.steps = 0
 
-        self.max_epochs = args["max_epochs"]
+        self.max_epochs = args.max_epochs
 
         self.device = args.device
 
@@ -46,8 +46,8 @@ class Trainer:
         model = models.get_model(args.model)(
             in_channels=self.dataset.in_channels, num_classes=self.dataset.num_classes)
 
-        if args["load_checkpoint"] is not None:
-            state = torch.load(args["load_checkpoint"], map_location="cpu")
+        if args.load_checkpoint is not None:
+            state = torch.load(args.load_checkpoint, map_location="cpu")
 
             if "state_dict" in state:
                 state = state["state_dict"]
@@ -55,12 +55,12 @@ class Trainer:
             model.load_state_dict(
                 dict((key.replace("model.", ""), value) for (key, value) in state.items()))
 
-        if args["reset_head"]:
+        if args.reset_head:
             model.fc.reset_parameters()
 
-        if args["freeze_layers"]:
+        if args.freeze_layers:
             for module in model.modules():
-                if type(module).__name__ in self.args["freeze_layers"].split(","):
+                if type(module).__name__ in self.args.freeze_layers.split(","):
                     for param in module.parameters():
                         param.requires_grad = False
 
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     steps = 0
 
     parser = ArgumentParser()
-    
+
     parser.add_argument("--model", type=str)
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--dataset_dir", type=str,
