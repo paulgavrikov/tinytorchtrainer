@@ -22,7 +22,7 @@ class CSVLogger:
 
 class CheckpointCallback:
     
-    CKPT_PATTERN = "epoch=%epoch%step=%step%.ckpt"
+    CKPT_PATTERN = "epoch=%epoch%-step=%step%.ckpt"
     
     def __init__(self, path, mode="all"):
         
