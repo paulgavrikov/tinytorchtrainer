@@ -17,7 +17,7 @@ class CSVLogger:
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
         print(row)
         self.rows.append(row)
-        pd.DataFrame(self.rows).to_csv(self.log_file)
+        pd.DataFrame(self.rows).to_csv(self.log_file, index=False)
         
 
 class CheckpointCallback:
