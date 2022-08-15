@@ -121,7 +121,7 @@ class Trainer:
     def fit(self):
         val_metrics = self.validate(
             self.model, self.valloader, self.criterion, self.device)
-        self.logger.log(0, 0, {**val_metrics})
+        self.logger.log(0, 0, {("val/" + k, v) for k, v in val_metrics.items()})
         self.checkpoint.save(0, 0, self.model, {})
 
         for epoch in range(self.max_epochs):
