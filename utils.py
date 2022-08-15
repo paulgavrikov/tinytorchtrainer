@@ -34,7 +34,7 @@ class CheckpointCallback:
 
     def save(self, epoch, step, model, metrics):
         if self.mode == "all":
-            out_path = os.path.join(self.path, self.CKPT_PATTERN.replace("%epoch%", epoch).replace("%step%", step))
+            out_path = os.path.join(self.path, self.CKPT_PATTERN.replace("%epoch%", str(epoch)).replace("%step%", str(step)))
             torch.save({"state_dict": model.state_dict(), "metrics": metrics, "epoch": epoch, "step": step}, out_path)
 
 
