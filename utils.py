@@ -2,7 +2,7 @@ from git import RemoteProgress
 import torch
 from tqdm import tqdm
 import argparse
-import datetime
+from datetime import datetime
 import os
 import pandas as pd
 
