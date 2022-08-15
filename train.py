@@ -96,7 +96,7 @@ class Trainer:
             "loss": total_loss / total
         }
 
-    def validate(model, valloader, criterion, device):
+    def validate(self, model, valloader, criterion, device):
         correct = 0
         total = 0
         total_loss = 0
