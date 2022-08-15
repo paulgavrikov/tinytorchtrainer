@@ -11,7 +11,7 @@ import argparse
 from argparse import ArgumentParser
 import yaml
 import sys
-from utils import none2str, str2bool, CSVLogger, CheckpointCallback
+from utils import none2str, str2bool, CSVLogger, CheckpointCallback, prepend_key_prefix
 
 
 class Trainer:
@@ -121,7 +121,7 @@ class Trainer:
     def fit(self):
         val_metrics = self.validate(
             self.model, self.valloader, self.criterion, self.device)
-        self.logger.log(0, 0, {("val/" + k, v) for k, v in val_metrics.items()})
+        self.logger.log(0, 0, prepend_key_prefix(val_metrics, "val/"))
         self.checkpoint.save(0, 0, self.model, {})
 
         for epoch in range(self.max_epochs):
@@ -133,8 +133,7 @@ class Trainer:
             val_metrics = self.validate(
                 self.model, self.valloader, self.criterion, self.device)
 
-            metrics = {**{("train/" + k, v) for k, v in train_metrics.items()},
-                       **{("val/" + k, v) for k, v in val_metrics.items()}}
+            metrics = {**prepend_key_prefix(train_metrics, "train/"), **prepend_key_prefix(val_metrics, "val/")}
             self.logger.log(epoch, self.steps, metrics)
             self.checkpoint.save(epoch, steps, self.model, metrics)
 

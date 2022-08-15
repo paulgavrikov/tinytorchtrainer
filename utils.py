@@ -77,3 +77,6 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+def prepend_key_prefix(d, prefix):
+    return dict((prefix + key, value) for (key, value) in d.items())
