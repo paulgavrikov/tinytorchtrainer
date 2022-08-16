@@ -19,7 +19,7 @@ class Trainer:
     def __init__(self, args, output_dir):
         self.dataset = data.get_dataset(args.dataset)(os.path.join(
             args.dataset_dir, args.dataset), args.batch_size, args.num_workers)
-        self.model = Trainer.prepare_model(args, self.dataset)
+        self.model = Trainer.prepare_model(args, self.dataset.in_channels, self.dataset.num_classes)
 
         self.opt = torch.optim.SGD(
             filter(lambda x: x.requires_grad, self.model.parameters()), 
@@ -39,9 +39,9 @@ class Trainer:
 
         self.device = args.device
 
-    def prepare_model(args, dataset):
+    def prepare_model(args, in_channels, num_classes):
         model = models.get_model(args.model)(
-            in_channels=dataset.in_channels, num_classes=dataset.num_classes)
+            in_channels=in_channels, num_classes=num_classes)
 
         if args.load_checkpoint is not None:
             state = torch.load(args.load_checkpoint, map_location="cpu")
