@@ -40,9 +40,7 @@ class CheckpointCallback:
             torch.save(
                 {
                     "state_dict": model.state_dict(), 
-                    "metrics": metrics, 
-                    "epoch": epoch, 
-                    "step": step,
+                    "metrics": {"epoch": epoch, "step": step, **metrics}, 
                     "args": self.args
                 }, out_path)
 
