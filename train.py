@@ -154,8 +154,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    steps = 0
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str)
