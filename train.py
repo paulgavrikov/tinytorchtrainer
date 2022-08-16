@@ -19,7 +19,7 @@ class Trainer:
     def __init__(self, args, output_dir):
         self.dataset = data.get_dataset(args.dataset)(os.path.join(
             args.dataset_dir, args.dataset), args.batch_size, args.num_workers)
-        self.model = self.prepare_model(args, self.dataset)
+        self.model = Trainer.prepare_model(args, self.dataset)
 
         self.opt = torch.optim.SGD(
             filter(lambda x: x.requires_grad, self.model.parameters()), 
@@ -39,7 +39,7 @@ class Trainer:
 
         self.device = args.device
 
-    def prepare_model(self, args, dataset):
+    def prepare_model(args, dataset):
         model = models.get_model(args.model)(
             in_channels=dataset.in_channels, num_classes=dataset.num_classes)
 
