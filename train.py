@@ -135,7 +135,7 @@ class Trainer:
 
             metrics = {**prepend_key_prefix(train_metrics, "train/"), **prepend_key_prefix(val_metrics, "val/")}
             self.logger.log(epoch, self.steps, metrics)
-            self.checkpoint.save(epoch, steps, self.model, metrics)
+            self.checkpoint.save(epoch, self.steps, self.model, metrics)
 
 
 def main(args):

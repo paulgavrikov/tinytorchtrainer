@@ -22,7 +22,7 @@ class CSVLogger:
 
 class CheckpointCallback:
     
-    CKPT_PATTERN = "epoch=%epoch%-step=%step%.ckpt"
+    CKPT_PATTERN = "epoch=%d-step=%d.ckpt"
     
     def __init__(self, path, mode="all", args=None):
         
@@ -36,7 +36,7 @@ class CheckpointCallback:
 
     def save(self, epoch, step, model, metrics):
         if self.mode == "all":
-            out_path = os.path.join(self.path, self.CKPT_PATTERN.replace("%epoch%", str(epoch)).replace("%step%", str(step)))
+            out_path = os.path.join(self.path, self.CKPT_PATTERN % (epoch, step))
             torch.save(
                 {
                     "state_dict": model.state_dict(), 
