@@ -19,7 +19,7 @@ class Trainer:
     def __init__(self, args, output_dir):
         self.dataset = data.get_dataset(args.dataset)(os.path.join(
             args.dataset_dir, args.dataset), args.batch_size, args.num_workers)
-        self.model = self.prepare_model(args)
+        self.model = self.prepare_model(args, self.dataset)
 
         self.opt = torch.optim.SGD(
             filter(lambda x: x.requires_grad, self.model.parameters()), 
@@ -27,9 +27,6 @@ class Trainer:
         self.scheduler = torch.optim.lr_scheduler.StepLR(
             self.opt, step_size=30, gamma=0.1)
         self.criterion = torch.nn.CrossEntropyLoss()
-
-        self.trainloader = self.dataset.train_dataloader()
-        self.valloader = self.dataset.val_dataloader()
 
         self.logger = CSVLogger(os.path.join(output_dir, "metrics.csv"))
         self.checkpoint = CheckpointCallback(os.path.join(
@@ -42,9 +39,9 @@ class Trainer:
 
         self.device = args.device
 
-    def prepare_model(self, args):
+    def prepare_model(self, args, dataset):
         model = models.get_model(args.model)(
-            in_channels=self.dataset.in_channels, num_classes=self.dataset.num_classes)
+            in_channels=dataset.in_channels, num_classes=dataset.num_classes)
 
         if args.load_checkpoint is not None:
             state = torch.load(args.load_checkpoint, map_location="cpu")
@@ -60,7 +57,7 @@ class Trainer:
 
         if args.freeze_layers:
             for module in model.modules():
-                if type(module).__name__ in self.args.freeze_layers.split(","):
+                if type(module).__name__ in args.freeze_layers.split(","):
                     for param in module.parameters():
                         param.requires_grad = False
 
@@ -119,8 +116,11 @@ class Trainer:
         }
 
     def fit(self):
+        trainloader = self.dataset.train_dataloader()
+        valloader = self.dataset.val_dataloader()
+
         val_metrics = self.validate(
-            self.model, self.valloader, self.criterion, self.device)
+            self.model, valloader, self.criterion, self.device)
         self.logger.log(0, 0, prepend_key_prefix(val_metrics, "val/"))
         self.checkpoint.save(0, 0, self.model, {})
 
@@ -129,9 +129,9 @@ class Trainer:
             self.epoch = epoch
 
             train_metrics = self.train(
-                self.model, self.trainloader, self.opt, self.criterion, self.device, self.scheduler)
+                self.model, trainloader, self.opt, self.criterion, self.device, self.scheduler)
             val_metrics = self.validate(
-                self.model, self.valloader, self.criterion, self.device)
+                self.model, valloader, self.criterion, self.device)
 
             metrics = {**prepend_key_prefix(train_metrics, "train/"), **prepend_key_prefix(val_metrics, "val/")}
             self.logger.log(epoch, self.steps, metrics)
