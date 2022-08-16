@@ -24,18 +24,27 @@ class CheckpointCallback:
     
     CKPT_PATTERN = "epoch=%epoch%-step=%step%.ckpt"
     
-    def __init__(self, path, mode="all"):
+    def __init__(self, path, mode="all", args=None):
         
         assert mode in ["all", None]
         
         self.path = path 
         self.mode = mode
+        self.args = args
+
         os.makedirs(self.path, exist_ok=True)
 
     def save(self, epoch, step, model, metrics):
         if self.mode == "all":
             out_path = os.path.join(self.path, self.CKPT_PATTERN.replace("%epoch%", str(epoch)).replace("%step%", str(step)))
-            torch.save({"state_dict": model.state_dict(), "metrics": metrics, "epoch": epoch, "step": step}, out_path)
+            torch.save(
+                {
+                    "state_dict": model.state_dict(), 
+                    "metrics": metrics, 
+                    "epoch": epoch, 
+                    "step": step,
+                    "args": self.args
+                }, out_path)
 
 
 class CloneProgress(RemoteProgress):

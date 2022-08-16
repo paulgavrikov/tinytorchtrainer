@@ -33,7 +33,7 @@ class Trainer:
 
         self.logger = CSVLogger(os.path.join(output_dir, "metrics.csv"))
         self.checkpoint = CheckpointCallback(os.path.join(
-            output_dir, "checkpoints"), mode=args.checkpoints)
+            output_dir, "checkpoints"), mode=args.checkpoints, args=args)
 
         self.epoch = 0
         self.steps = 0
