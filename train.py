@@ -3,15 +3,11 @@ import numpy as np
 import random
 import models
 import data
-from tqdm import tqdm
-import pandas as pd
 import os
-from datetime import datetime
 import argparse
-from argparse import ArgumentParser
 import yaml
 import sys
-from utils import none2str, str2bool, CSVLogger, CheckpointCallback, prepend_key_prefix
+from utils import CSVLogger, CheckpointCallback, none2str, str2bool, prepend_key_prefix
 
 
 class Trainer:
@@ -49,8 +45,7 @@ class Trainer:
             if "state_dict" in state:
                 state = state["state_dict"]
 
-            model.load_state_dict(
-                dict((key.replace("model.", ""), value) for (key, value) in state.items()))
+            model.load_state_dict(state)
 
         if args.reset_head:
             model.fc.reset_parameters()
@@ -161,7 +156,7 @@ def main(args):
 if __name__ == "__main__":
     steps = 0
 
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument("--model", type=str)
     parser.add_argument("--dataset", type=str)
