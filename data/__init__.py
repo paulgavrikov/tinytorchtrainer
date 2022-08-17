@@ -742,6 +742,38 @@ class FashionMNISTData(TensorData):
         self.in_channels = 1
 
 
+class CIFAR10Corruptions(Dataset):
+
+    def list_corruptions():
+        return ['fog', 'spatter', 'zoom_blur', 'defocus_blur', 'speckle_noise', 'jpeg_compression', 'frost', 'gaussian_noise', 'brightness', 
+                              'elastic_transform', 'contrast', 'gaussian_blur', 'snow', 'shot_noise', 'saturate', 'glass_blur', 'motion_blur', 'pixelate', 'impulse_noise']
+
+    def __init__(self, path: str, corruption: str, severity: int, transform=None):
+        """
+        Args:
+            path (string): Path to numpy arrays.
+            corruption (string): Corruption to load.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        assert corruption in CIFAR10Corruptions.list_corruptions()
+
+        self.samples = np.load(os.path.join(path, corruption + ".npy"))[(severity - 1) * 10000:severity * 10000]
+        self.labels = np.load(os.path.join(path, "labels.npy"))[(severity - 1) * 10000:severity * 10000]
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        sample = Image.fromarray(self.samples[idx])
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample, self.labels[idx]
+
+
 all_datasets = {
     "cifar10": CIFAR10Data,
     "cifar100": CIFAR100Data,
