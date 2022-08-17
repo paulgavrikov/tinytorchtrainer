@@ -7,7 +7,7 @@ import os
 import argparse
 import yaml
 import sys
-from utils import CSVLogger, CheckpointCallback, none2str, str2bool, prepend_key_prefix
+from utils import CSVLogger, ConsoleLogger, WandBLogger, CheckpointCallback, none2str, str2bool, prepend_key_prefix
 
 
 class Trainer:
@@ -24,7 +24,12 @@ class Trainer:
             self.opt, step_size=30, gamma=0.1)
         self.criterion = torch.nn.CrossEntropyLoss()
 
-        self.loggers = [CSVLogger(os.path.join(output_dir, "metrics.csv"))]
+        self.loggers = []
+
+        self.loggers.append(ConsoleLogger())
+        self.loggers.append(CSVLogger(os.path.join(output_dir, "metrics.csv")))
+        if args.wandb_project:
+            self.loggers.append(WandBLogger(args.wandb_project, args))
 
         self.checkpoint = CheckpointCallback(os.path.join(
             output_dir, "checkpoints"), mode=args.checkpoints, args=vars(args))
@@ -183,6 +188,9 @@ if __name__ == "__main__":
     parser.add_argument("--freeze_layers", type=none2str, default=None)
 
     parser.add_argument("--seed", type=int, default=0)
+
+    parser.add_argument("--wandb_project", type=none2str, default=None)
+
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)
