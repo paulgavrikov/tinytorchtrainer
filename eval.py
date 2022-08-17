@@ -1,6 +1,4 @@
 import torch
-import models
-import data
 import sys
 import argparse
 from train import Trainer
