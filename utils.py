@@ -5,6 +5,7 @@ import argparse
 from datetime import datetime
 import os
 import pandas as pd
+import wandb
 
 
 class CSVLogger:
@@ -18,6 +19,22 @@ class CSVLogger:
         print(row)
         self.rows.append(row)
         pd.DataFrame(self.rows).to_csv(self.log_file, index=False)
+
+
+class ConsoleLogger:
+    
+    def log(self, epoch, step, row):
+        print(f"[{datetime.now()}] Epoch {epoch} -  {row}")
+
+
+class WandBLogger:
+    
+    def __init__(self, project, args):
+        wandb.init(config=args, project=project)
+
+    def log(self, epoch, step, row):
+        row = {"epoch": epoch, "step": step, **row}
+        wandb.log(row)
         
 
 class CheckpointCallback:
