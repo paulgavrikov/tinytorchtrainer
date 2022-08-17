@@ -24,7 +24,8 @@ class Trainer:
             self.opt, step_size=30, gamma=0.1)
         self.criterion = torch.nn.CrossEntropyLoss()
 
-        self.logger = CSVLogger(os.path.join(output_dir, "metrics.csv"))
+        self.loggers = [CSVLogger(os.path.join(output_dir, "metrics.csv"))]
+
         self.checkpoint = CheckpointCallback(os.path.join(
             output_dir, "checkpoints"), mode=args.checkpoints, args=vars(args))
 
@@ -116,7 +117,8 @@ class Trainer:
 
         val_metrics = self.validate(
             self.model, valloader, self.criterion, self.device)
-        self.logger.log(0, 0, prepend_key_prefix(val_metrics, "val/"))
+        for logger in self.loggers:
+            logger.log(0, 0, prepend_key_prefix(val_metrics, "val/"))
         self.checkpoint.save(0, 0, self.model, {})
 
         for epoch in range(self.max_epochs):
@@ -129,7 +131,8 @@ class Trainer:
                 self.model, valloader, self.criterion, self.device)
 
             metrics = {**prepend_key_prefix(train_metrics, "train/"), **prepend_key_prefix(val_metrics, "val/")}
-            self.logger.log(epoch, self.steps, metrics)
+            for logger in self.loggers:
+                logger.log(epoch, self.steps, metrics)
             self.checkpoint.save(epoch, self.steps, self.model, metrics)
 
 
