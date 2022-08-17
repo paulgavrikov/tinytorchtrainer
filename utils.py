@@ -16,13 +16,12 @@ class CSVLogger:
 
     def log(self, epoch, step, row):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
-        print(row)
         self.rows.append(row)
         pd.DataFrame(self.rows).to_csv(self.log_file, index=False)
 
 
 class ConsoleLogger:
-    
+
     def log(self, epoch, step, row):
         print(f"[{datetime.now()}] Epoch {epoch} -  {row}")
 
@@ -33,7 +32,7 @@ class WandBLogger:
         wandb.init(config=args, project=project)
 
     def log(self, epoch, step, row):
-        row = {"epoch": epoch, "step": step, **row}
+        row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
         wandb.log(row)
         
 
