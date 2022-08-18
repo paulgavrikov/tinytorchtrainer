@@ -1,45 +1,19 @@
 import torch
-import numpy as np
-import random
 import models
 import data
 import os
 import argparse
 import yaml
 import sys
-from utils import CSVLogger, ConsoleLogger, WandBLogger, CheckpointCallback, none2str, str2bool, prepend_key_prefix
+from utils import CSVLogger, ConsoleLogger, WandBLogger, CheckpointCallback, none2str, str2bool, prepend_key_prefix, seed_everything
 
 
 class Trainer:
 
-    def __init__(self, args, output_dir):
-        self.dataset = data.get_dataset(args.dataset)(os.path.join(
-            args.dataset_dir, args.dataset), args.batch_size, args.num_workers)
-        self.model = Trainer.prepare_model(args, self.dataset.in_channels, self.dataset.num_classes)
-
-        self.opt = torch.optim.SGD(
-            filter(lambda x: x.requires_grad, self.model.parameters()), 
-            lr=args.learning_rate, momentum=args.momentum, nesterov=args.nesterov, weight_decay=args.weight_decay)
-        self.scheduler = torch.optim.lr_scheduler.StepLR(
-            self.opt, step_size=30, gamma=0.1)
-        self.criterion = torch.nn.CrossEntropyLoss()
-
-        self.loggers = []
-
-        self.loggers.append(ConsoleLogger())
-        self.loggers.append(CSVLogger(os.path.join(output_dir, "metrics.csv")))
-        if args.wandb_project:
-            self.loggers.append(WandBLogger(args.wandb_project, args))
-
-        self.checkpoint = CheckpointCallback(os.path.join(
-            output_dir, "checkpoints"), mode=args.checkpoints, args=vars(args))
-
-        self.epoch = 0
-        self.steps = 0
-
-        self.max_epochs = args.max_epochs
-
+    def __init__(self, args):
+        self.model = Trainer.prepare_model(args, args.model_in_channels, args.model_num_classes)
         self.device = args.device
+        self.args = args
 
     def prepare_model(args, in_channels, num_classes):
         model = models.get_model(args.model)(
@@ -116,17 +90,39 @@ class Trainer:
             "loss": total_loss / total
         }
 
-    def fit(self):
-        trainloader = self.dataset.train_dataloader()
-        valloader = self.dataset.val_dataloader()
+    def fit(self, dataset, output_dir=None):
+        trainloader = dataset.train_dataloader()
+        valloader = dataset.val_dataloader()
+
+        self.opt = torch.optim.SGD(
+            filter(lambda x: x.requires_grad, self.model.parameters()), 
+            lr=self.args.learning_rate, momentum=self.args.momentum, nesterov=self.args.nesterov, weight_decay=self.args.weight_decay)
+        self.scheduler = torch.optim.lr_scheduler.StepLR(
+            self.opt, step_size=30, gamma=0.1)
+        self.criterion = torch.nn.CrossEntropyLoss()
+
+        loggers = []
+        loggers.append(ConsoleLogger())
+        if output_dir:
+            loggers.append(CSVLogger(os.path.join(output_dir, "metrics.csv")))
+        if self.args.wandb_project:
+            loggers.append(WandBLogger(self.args.wandb_project, self.args))
+
+        if output_dir:
+            self.checkpoint = CheckpointCallback(os.path.join(
+            output_dir, "checkpoints"), mode=self.args.checkpoints, args=vars(self.args))
+
+        self.epoch = 0
+        self.steps = 0
 
         val_metrics = self.validate(
             self.model, valloader, self.criterion, self.device)
-        for logger in self.loggers:
+        for logger in loggers:
             logger.log(0, 0, prepend_key_prefix(val_metrics, "val/"))
-        self.checkpoint.save(0, 0, self.model, {})
+        if output_dir:
+            self.checkpoint.save(0, 0, self.model, {})
 
-        for epoch in range(self.max_epochs):
+        for epoch in range(self.args.max_epochs):
 
             self.epoch = epoch
 
@@ -136,9 +132,10 @@ class Trainer:
                 self.model, valloader, self.criterion, self.device)
 
             metrics = {**prepend_key_prefix(train_metrics, "train/"), **prepend_key_prefix(val_metrics, "val/")}
-            for logger in self.loggers:
+            for logger in loggers:
                 logger.log(epoch, self.steps, metrics)
-            self.checkpoint.save(epoch, self.steps, self.model, metrics)
+            if output_dir:
+                self.checkpoint.save(epoch, self.steps, self.model, metrics)
 
 
 def main(args):
@@ -149,16 +146,21 @@ def main(args):
             output_dir = output_dir.replace(
                 f"%{k}%", v if type(v) == str else str(v))
 
-    os.makedirs(output_dir, exist_ok=True)
+    seed_everything(args.seed)
+
+    dataset = data.get_dataset(args.dataset)(os.path.join(
+            args.dataset_dir, args.dataset), args.batch_size, args.num_workers)
+
+    if args.model_in_channels == -1:
+        vars(args)["model_in_channels"] = dataset.in_channels
+    
+    if args.model_num_classes == -1:
+        vars(args)["model_num_classes"] = dataset.num_classes
 
     with open(os.path.join(output_dir, "hparams.yaml"), "w") as file:
         yaml.dump(vars(args), file)
 
-    torch.manual_seed(args.seed)
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-
-    Trainer(args, output_dir).fit()
+    Trainer(args, output_dir).fit(dataset, output_dir=output_dir)
 
 
 if __name__ == "__main__":
@@ -175,6 +177,9 @@ if __name__ == "__main__":
                         default=None, choices=["all", None])
     parser.add_argument("--load_checkpoint", type=str, default=None)
     parser.add_argument("--reset_head", type=str2bool, default=False)
+
+    parser.add_argument("--model_in_channels", type=int, default=-1)
+    parser.add_argument("--model_num_classes", type=int, default=-1)
 
     parser.add_argument("--max_epochs", type=int, default=125)
     parser.add_argument("--batch_size", type=int, default=256)

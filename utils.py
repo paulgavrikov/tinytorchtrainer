@@ -6,6 +6,8 @@ from datetime import datetime
 import os
 import pandas as pd
 import wandb
+import numpy as np
+import random
 
 
 class CSVLogger:
@@ -13,6 +15,7 @@ class CSVLogger:
     def __init__(self, log_file):
         self.rows = []
         self.log_file = log_file 
+        os.makedirs(self.log_file, exist_ok=True)
 
     def log(self, epoch, step, row):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
@@ -47,7 +50,7 @@ class CheckpointCallback:
         self.path = path 
         self.mode = mode
         self.args = args
-
+        
         os.makedirs(self.path, exist_ok=True)
 
     def save(self, epoch, step, model, metrics):
@@ -62,7 +65,7 @@ class CheckpointCallback:
 
 
 class CloneProgress(RemoteProgress):
-    def update(self, op_code, cur_count, max_count=None, message=''):
+    def update(self, op_code, cur_count, max_count=None, message=""):
         pbar = tqdm(total=max_count)
         pbar.update(cur_count)
 
@@ -82,7 +85,7 @@ class NormalizedModel(torch.nn.Module):
     
     
 def none2str(value):  # from https://stackoverflow.com/questions/48295246/how-to-pass-none-keyword-as-command-line-argument
-    if value == 'None':
+    if value == "None":
         return None
     return value
 
@@ -90,16 +93,23 @@ def none2str(value):  # from https://stackoverflow.com/questions/48295246/how-to
 def str2bool(v):
     """
     Converts string to bool type; enables command line 
-    arguments in the format of '--arg1 true --arg2 false'
+    arguments in the format of "--arg1 true --arg2 false"
     """
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
 
 def prepend_key_prefix(d, prefix):
     return dict((prefix + key, value) for (key, value) in d.items())
+
+
+def seed_everything(seed):
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
