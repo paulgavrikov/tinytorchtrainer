@@ -37,6 +37,16 @@ class Trainer:
                         param.requires_grad = False
 
         model.to(args.device)
+        
+        
+        if args.verbose:
+            print()
+            print("TRAINABLE PARAMETERS:")
+            print([f"{name} {p.shape}" for name, p in
+                    filter(lambda p: p[1].requires_grad, model.named_parameters())])
+            print(
+                f"TOTAL: {sum(list(map(lambda p: p.numel(), filter(lambda p: p.requires_grad, model.parameters()))))}")
+        
         return model
 
     def train(self, model, trainloader, opt, criterion, device, scheduler=None):
@@ -194,6 +204,8 @@ if __name__ == "__main__":
     parser.add_argument("--freeze_layers", type=none2str, default=None)
 
     parser.add_argument("--seed", type=int, default=0)
+    
+    parser.add_argument("--verbose", type=str2bool, default=False)
 
     parser.add_argument("--wandb_project", type=none2str, default=None)
 
