@@ -44,7 +44,7 @@ def main(args):
         all_x.append(x.to(trainer.device))
         all_y.append(y.to(trainer.device))
 
-        if args.n_samples == -1:
+        if args.n_samples != -1:
             break
 
     all_x = torch.vstack(all_x)
@@ -56,7 +56,6 @@ def main(args):
     all_x = all_x * model.std + model.mean  # unnormalize samples for AA
 
     adversary = AutoAttack(model, norm=args.norm, eps=args.eps)
-
     _ = adversary.run_standard_evaluation(all_x, all_y)
 
 
