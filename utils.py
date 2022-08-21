@@ -15,7 +15,7 @@ class CSVLogger:
     def __init__(self, log_file):
         self.rows = []
         self.log_file = log_file 
-        os.makedirs(self.log_file, exist_ok=True)
+        os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
 
     def log(self, epoch, step, row):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}

@@ -157,10 +157,11 @@ def main(args):
     if args.model_num_classes == -1:
         vars(args)["model_num_classes"] = dataset.num_classes
 
+    os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "hparams.yaml"), "w") as file:
         yaml.dump(vars(args), file)
 
-    Trainer(args, output_dir).fit(dataset, output_dir=output_dir)
+    Trainer(args).fit(dataset, output_dir=output_dir)
 
 
 if __name__ == "__main__":
