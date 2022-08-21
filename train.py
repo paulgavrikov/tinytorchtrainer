@@ -104,11 +104,16 @@ class Trainer:
         trainloader = dataset.train_dataloader()
         valloader = dataset.val_dataloader()
 
-        self.opt = torch.optim.SGD(
-            filter(lambda x: x.requires_grad, self.model.parameters()), 
-            lr=self.args.learning_rate, momentum=self.args.momentum, nesterov=self.args.nesterov, weight_decay=self.args.weight_decay)
-        self.scheduler = torch.optim.lr_scheduler.StepLR(
+        
+        if self.args.optimizer == "sgd":
+            self.opt = torch.optim.SGD(filter(lambda x: x.requires_grad, self.model.parameters()), lr=self.args.learning_rate, momentum=self.args.momentum, nesterov=self.args.nesterov, weight_decay=self.args.weight_decay)
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
             self.opt, step_size=30, gamma=0.1)
+        elif self.args.optimizer == "adam":
+            self.opt = torch.optim.Adam(filter(lambda x: x.requires_grad, self.model.parameters()), lr=self.args.learning_rate, weight_decay=self.args.weight_decay)
+            self.scheduler = None
+        
+        
         self.criterion = torch.nn.CrossEntropyLoss()
 
         loggers = []
@@ -197,6 +202,8 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=0)
 
     # optimizer
+    parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd"])
+
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-2)
     parser.add_argument("--momentum", type=float, default=0.9)
