@@ -51,6 +51,7 @@ def main(args):
     all_y = torch.hstack(all_y)
 
     model = NormalizedModel(trainer.model, dataset.mean, dataset.std).to(trainer.device)
+    model.eval()
 
     all_x = all_x * model.std + model.mean  # unnormalize samples for AA
 
