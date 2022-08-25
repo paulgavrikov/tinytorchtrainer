@@ -10,8 +10,9 @@ from utils import CSVLogger, ConsoleLogger, WandBLogger, CheckpointCallback, non
 
 class Trainer:
 
-    def __init__(self, args):    
-        self.model = Trainer.prepare_model(args, args.model_in_channels, args.model_num_classes)
+    def __init__(self, args):
+        self.model = Trainer.prepare_model(
+            args, args.model_in_channels, args.model_num_classes)
         self.device = args.device
         self.args = args
 
@@ -49,16 +50,15 @@ class Trainer:
                         param.requires_grad = False
 
         model.to(args.device)
-        
-        
+
         if args.verbose:
             print()
             print("TRAINABLE PARAMETERS:")
             print([f"{name} {p.shape}" for name, p in
-                    filter(lambda p: p[1].requires_grad, model.named_parameters())])
+                   filter(lambda p: p[1].requires_grad, model.named_parameters())])
             print(
                 f"TOTAL: {sum(list(map(lambda p: p.numel(), filter(lambda p: p.requires_grad, model.parameters()))))}")
-        
+
         return model
 
     def train(self, model, trainloader, opt, criterion, device, scheduler=None):
@@ -116,16 +116,16 @@ class Trainer:
         trainloader = dataset.train_dataloader()
         valloader = dataset.val_dataloader()
 
-        
         if self.args.optimizer == "sgd":
-            self.opt = torch.optim.SGD(filter(lambda x: x.requires_grad, self.model.parameters()), lr=self.args.learning_rate, momentum=self.args.momentum, nesterov=self.args.nesterov, weight_decay=self.args.weight_decay)
+            self.opt = torch.optim.SGD(filter(lambda x: x.requires_grad, self.model.parameters(
+            )), lr=self.args.learning_rate, momentum=self.args.momentum, nesterov=self.args.nesterov, weight_decay=self.args.weight_decay)
             self.scheduler = torch.optim.lr_scheduler.StepLR(
-            self.opt, step_size=30, gamma=0.1)
+                self.opt, step_size=30, gamma=0.1)
         elif self.args.optimizer == "adam":
-            self.opt = torch.optim.Adam(filter(lambda x: x.requires_grad, self.model.parameters()), lr=self.args.learning_rate, weight_decay=self.args.weight_decay)
+            self.opt = torch.optim.Adam(filter(lambda x: x.requires_grad, self.model.parameters(
+            )), lr=self.args.learning_rate, weight_decay=self.args.weight_decay)
             self.scheduler = None
-        
-        
+
         self.criterion = torch.nn.CrossEntropyLoss()
 
         loggers = []
@@ -137,7 +137,7 @@ class Trainer:
 
         if output_dir:
             self.checkpoint = CheckpointCallback(os.path.join(
-            output_dir, "checkpoints"), mode=self.args.checkpoints, args=vars(self.args))
+                output_dir, "checkpoints"), mode=self.args.checkpoints, args=vars(self.args))
 
         self.epoch = 0
         self.steps = 0
@@ -149,6 +149,9 @@ class Trainer:
         if output_dir:
             self.checkpoint.save(0, 0, self.model, {})
 
+        val_acc_max = 0
+        best_epoch = 0
+
         for epoch in range(self.args.max_epochs):
 
             self.epoch = epoch
@@ -158,7 +161,16 @@ class Trainer:
             val_metrics = self.validate(
                 self.model, valloader, self.criterion, self.device)
 
-            metrics = {**prepend_key_prefix(train_metrics, "train/"), **prepend_key_prefix(val_metrics, "val/")}
+            metrics = {**prepend_key_prefix(train_metrics, "train/"), **prepend_key_prefix(val_metrics, "val/"),
+                       "val/acc_max": val_acc_max, "best_epoch": best_epoch}
+
+            if val_acc_max < metrics["val/acc"]:
+                val_acc_max = metrics["val/acc"]
+                best_epoch = epoch
+
+                metrics["val/acc_max"] = val_acc_max
+                metrics["best_epoch"] = best_epoch
+
             for logger in loggers:
                 logger.log(epoch, self.steps, metrics)
             if output_dir:
@@ -176,11 +188,11 @@ def main(args):
     seed_everything(args.seed)
 
     dataset = data.get_dataset(args.dataset)(os.path.join(
-            args.dataset_dir, args.dataset), args.batch_size, args.num_workers)
+        args.dataset_dir, args.dataset), args.batch_size, args.num_workers)
 
     if args.model_in_channels == -1:
         vars(args)["model_in_channels"] = dataset.in_channels
-    
+
     if args.model_num_classes == -1:
         vars(args)["model_num_classes"] = dataset.num_classes
 
@@ -214,7 +226,8 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=0)
 
     # optimizer
-    parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd"])
+    parser.add_argument("--optimizer", type=str,
+                        default="sgd", choices=["adam", "sgd"])
 
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-2)
@@ -223,7 +236,7 @@ if __name__ == "__main__":
     parser.add_argument("--freeze_layers", type=none2str, default=None)
 
     parser.add_argument("--seed", type=int, default=0)
-    
+
     parser.add_argument("--verbose", type=str2bool, default=False)
 
     parser.add_argument("--wandb_project", type=none2str, default=None)
