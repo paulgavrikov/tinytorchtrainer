@@ -26,7 +26,7 @@ class CSVLogger:
 class ConsoleLogger:
 
     def log(self, epoch, step, row):
-        print(f"[{datetime.now()}] Epoch {epoch} -  {row}")
+        print(f"[{datetime.now()}] Epoch {epoch} - {row}")
 
 
 class WandBLogger:

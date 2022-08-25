@@ -10,16 +10,24 @@ from utils import CSVLogger, ConsoleLogger, WandBLogger, CheckpointCallback, non
 
 class Trainer:
 
-    def __init__(self, args):
+    def __init__(self, args):    
         self.model = Trainer.prepare_model(args, args.model_in_channels, args.model_num_classes)
         self.device = args.device
         self.args = args
 
     def prepare_model(args, in_channels, num_classes):
+        
+        if args.verbose:
+            print(f"Initializing {args.model}")
+        
         model = models.get_model(args.model)(
             in_channels=in_channels, num_classes=num_classes)
 
         if args.load_checkpoint is not None:
+            
+            if args.verbose:
+                print(f"Loading state from {args.load_checkpoint}")
+            
             state = torch.load(args.load_checkpoint, map_location="cpu")
 
             if "state_dict" in state:
@@ -28,12 +36,16 @@ class Trainer:
             model.load_state_dict(state)
 
         if args.reset_head:
+            if args.verbose:
+                print(f"Resetting head")
             model.fc.reset_parameters()
 
         if args.freeze_layers:
-            for module in model.modules():
+            for mname, module in model.named_modules():
                 if type(module).__name__ in args.freeze_layers.split(","):
-                    for param in module.parameters():
+                    for pname, param in module.named_parameters():
+                        if args.verbose:
+                            print(f"Freezing {mname}/{pname}")
                         param.requires_grad = False
 
         model.to(args.device)
@@ -215,6 +227,9 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", type=str2bool, default=False)
 
     parser.add_argument("--wandb_project", type=none2str, default=None)
+    parser.add_argument("--wandb_extra_1", type=none2str, default=None)
+    parser.add_argument("--wandb_extra_2", type=none2str, default=None)
+    parser.add_argument("--wandb_extra_3", type=none2str, default=None)
 
     _args = parser.parse_args()
     main(_args)
