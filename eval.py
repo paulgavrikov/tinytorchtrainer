@@ -2,7 +2,8 @@ import torch
 import sys
 import argparse
 from train import Trainer
-import shutil
+import data
+import os
 
 
 def main(args):
@@ -12,14 +13,21 @@ def main(args):
     for k, v in ckpt["args"].items():
         vars(saved_args)[k] = v
 
+    dataset = data.get_dataset(saved_args.dataset)(os.path.join(
+            saved_args.dataset_dir, saved_args.dataset), saved_args.batch_size, saved_args.num_workers)
+
     vars(saved_args)["load_checkpoint"] = args.load_checkpoint
     vars(saved_args)["device"] = args.device
     vars(saved_args)["batch_size"] = args.batch_size
-    
-    trainer = Trainer(saved_args, ".temp")
-    metrics = trainer.validate(trainer.model, trainer.dataset.val_dataloader(), trainer.criterion, trainer.device)
+    vars(saved_args)["model_in_channels"] = dataset.in_channels
+    vars(saved_args)["model_num_classes"] = dataset.num_classes
+
+    trainer = Trainer(saved_args)
+
+    criterion = torch.nn.CrossEntropyLoss()
+
+    metrics = trainer.validate(trainer.model, dataset.val_dataloader(), criterion, trainer.device)
     print(metrics)
-    shutil.rmtree(".temp")
 
 
 if __name__ == "__main__":
