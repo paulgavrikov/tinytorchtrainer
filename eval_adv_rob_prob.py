@@ -1,12 +1,9 @@
-from ctypes import LibraryLoader
 import torch
 import sys
 import argparse
 from train import Trainer
-from utils import NormalizedModel
 import os
 import data
-from tqdm import tqdm
 
 
 def main(args):
@@ -26,9 +23,6 @@ def main(args):
     vars(saved_args)["model_num_classes"] = dataset.num_classes
 
     trainer = Trainer(saved_args)
-
-    all_x = []
-    all_y = []
     loader = None
 
     if args.data_split == "val":
@@ -40,7 +34,7 @@ def main(args):
 
     correct = 0
     total = 0
-    
+
     with torch.no_grad():
         for i, (x, y) in enumerate(loader):
 
@@ -52,7 +46,7 @@ def main(args):
             y = orig_pred.argmax().item()
 
             x = x.repeat(args.n_probes, 1, 1, 1)
-            
+
             delta = torch.FloatTensor(x.shape).uniform_(-args.eps, args.eps).to(trainer.device)
 
             y_pred = trainer.model(x + delta)
@@ -64,8 +58,9 @@ def main(args):
 
             correct += correct_batch
             total += len(x)
-        
+
     print(f"Accuracy: {correct/total}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
