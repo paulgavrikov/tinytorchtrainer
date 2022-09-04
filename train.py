@@ -215,7 +215,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--checkpoints", type=none2str,
                         default=None, choices=["all", None])
-    parser.add_argument("--load_checkpoint", type=str, default=None)
+    parser.add_argument("--load_checkpoint", type=none2str, default=None)
     parser.add_argument("--reset_head", type=str2bool, default=False)
 
     parser.add_argument("--model_in_channels", type=int, default=-1)
