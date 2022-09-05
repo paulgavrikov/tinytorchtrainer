@@ -7,6 +7,8 @@ import data
 
 
 def main(args):
+    assert args.batch_size <= args.n_probes
+
     ckpt = torch.load(args.load_checkpoint, map_location="cpu")
     saved_args = argparse.Namespace()
 
@@ -45,19 +47,22 @@ def main(args):
             orig_pred = torch.nn.Sigmoid()(trainer.model(x).detach())
             y = orig_pred.argmax().item()
 
-            x = x.repeat(args.n_probes, 1, 1, 1)
 
-            delta = torch.FloatTensor(x.shape).uniform_(-args.eps, args.eps).to(trainer.device)
+            for b in range(args.n_probes // args.batch_size):
+                x = x.repeat(args.batch_size, 1, 1, 1)
 
-            y_pred = trainer.model(x + delta)
+                delta = torch.FloatTensor(x.shape).uniform_(-args.eps, args.eps).to(trainer.device)
 
-            correct_batch = (y_pred.argmax(axis=1) == y).sum().item()
-            total_batch = len(x)
+                y_pred = trainer.model(x + delta)
 
-            print(f"[{i+1}/{args.n_samples if args.n_samples != -1 else len(loader)}] Batch Accuracy: {correct_batch/total_batch} with confidence {orig_pred.max().item()}")
+                correct_batch = (y_pred.argmax(axis=1) == y).sum().item()
+                total_batch = len(x)
 
-            correct += correct_batch
-            total += len(x)
+                print(f"[{i+1}/{args.n_samples if args.n_samples != -1 else len(loader)}] \
+                        Batch Accuracy: {correct_batch/total_batch} with confidence {orig_pred.max().item()}")
+
+                correct += correct_batch
+                total += len(x)
 
     print(f"Accuracy: {correct/total}")
 
@@ -70,7 +75,8 @@ if __name__ == "__main__":
     parser.add_argument("--eps", type=float, default=8/255)
     parser.add_argument("--data_split", type=str, default="val", choices=["train", "val"])
     parser.add_argument("--n_samples", type=int, default=-1)
-    parser.add_argument("--n_probes", type=int, default=512)
+    parser.add_argument("--n_probes", type=int, default=16384)
+    parser.add_argument("--batch_size", type=int, default=512)
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)
