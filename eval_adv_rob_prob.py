@@ -4,6 +4,7 @@ import argparse
 from train import Trainer
 import os
 import data
+from utils import str2bool
 
 
 def main(args):
@@ -77,6 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_samples", type=int, default=-1)
     parser.add_argument("--n_probes", type=int, default=16384)
     parser.add_argument("--batch_size", type=int, default=512)
+    parser.add_argument("--verbose", type=str2bool, default=False)
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)
