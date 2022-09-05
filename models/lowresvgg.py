@@ -15,7 +15,7 @@ __all__ = [
 
 
 class LowResVGG(nn.Module):
-    def __init__(self, cfg, num_classes=10, init_weights=True, in_channels=0, activation_fn=None):
+    def __init__(self, cfg, num_classes=10, init_weights=True, in_channels=0, activation_fn=None, batch_norm=True):
         super(LowResVGG, self).__init__()
 
         del in_channels  # unused
@@ -128,7 +128,7 @@ cfgs = {
 
 def _vgg(cfg, batch_norm, **kwargs):
     kwargs["init_weights"] = True
-    model = LowResVGG(cfg, **kwargs)
+    model = LowResVGG(cfg, batch_norm=batch_norm, **kwargs)
     return model
 
 
