@@ -18,12 +18,10 @@ class LowResVGG(nn.Module):
     def __init__(self, cfg, num_classes=10, init_weights=True, in_channels=0, activation_fn=None, batch_norm=True):
         super(LowResVGG, self).__init__()
 
-        del in_channels  # unused
-
         if activation_fn is None:
             activation_fn = nn.ReLU
 
-        self.features = make_layers(cfgs[cfg], activation_fn, batch_norm=batch_norm, in_channels=kwargs["in_channels"])
+        self.features = make_layers(cfgs[cfg], activation_fn, batch_norm=batch_norm, in_channels=in_channels)
         # CIFAR 10 (7, 7) to (1, 1)
         # self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
