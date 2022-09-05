@@ -12,21 +12,21 @@ class LowResLeNet5(nn.Module):
         super(LowResLeNet5, self).__init__()
 
         if activation_fn is None:
-            activation_fn = nn.Sigmoid()
+            activation_fn = nn.Sigmoid
 
         self.features = nn.Sequential(
             nn.Conv2d(in_channels, 6, kernel_size=5, padding=2),
-            activation_fn(in_place=True),
+            activation_fn(),
             nn.AvgPool2d(kernel_size=(2, 2), stride=2),
             nn.Conv2d(6, 16, kernel_size=5),
-            activation_fn(in_place=True),
+            activation_fn(),
             nn.AvgPool2d(kernel_size=(2, 2), stride=2),
         )
         self.fc = nn.Sequential(
             nn.LazyLinear(120),
-            activation_fn(in_place=True),
+            activation_fn(),
             nn.Linear(120, 84),
-            activation_fn(in_place=True),
+            activation_fn(),
             nn.Linear(84, num_classes),
         )
 

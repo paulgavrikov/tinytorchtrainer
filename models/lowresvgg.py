@@ -29,10 +29,10 @@ class LowResVGG(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(512 * 1 * 1, 4096),
             # nn.Linear(512 * 7 * 7, 4096),
-            activation_fn(in_place=True),
+            activation_fn(inplace=True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
-            activation_fn(in_place=True),
+            activation_fn(inplace=True),
             nn.Dropout(),
             nn.Linear(4096, num_classes),
         )

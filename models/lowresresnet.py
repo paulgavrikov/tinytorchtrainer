@@ -278,7 +278,7 @@ class LowResResNet(nn.Module):
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(self, block, planes, blocks, stride=1, dilate=False, skip_residual=False):
+    def _make_layer(self, block, planes, blocks, activation_fn, stride=1, dilate=False, skip_residual=False):
         norm_layer = self._norm_layer
         downsample = None
         previous_dilation = self.dilation
@@ -296,6 +296,7 @@ class LowResResNet(nn.Module):
             block(
                 self.inplanes,
                 planes,
+                activation_fn,
                 stride,
                 downsample,
                 self.groups,
@@ -311,6 +312,7 @@ class LowResResNet(nn.Module):
                 block(
                     self.inplanes,
                     planes,
+                    activation_fn,
                     groups=self.groups,
                     base_width=self.base_width,
                     dilation=self.dilation,

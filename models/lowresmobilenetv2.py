@@ -90,7 +90,7 @@ class LowResMobileNetV2(nn.Module):
             for i in range(n):
                 stride = s if i == 0 else 1
                 features.append(
-                    block(input_channel, output_channel, activation_fn, stride, expand_ratio=t)
+                    block(input_channel, output_channel, stride, expand_ratio=t, activation_fn=activation_fn)
                 )
                 input_channel = output_channel
         # building last several layers

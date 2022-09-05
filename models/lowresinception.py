@@ -30,24 +30,24 @@ class LowResInception3(nn.Module):
         self.transform_input = transform_input
 
         # CIFAR10: stride 2->1, padding 0 -> 1
-        self.Conv2d_1a_3x3 = BasicConv2d(in_channels, 192, kernel_size=3, stride=1, padding=1)
+        self.Conv2d_1a_3x3 = BasicConv2d(in_channels, 192, activation_fn, kernel_size=3, stride=1, padding=1)
         #         self.Conv2d_2a_3x3 = BasicConv2d(32, 32, kernel_size=3)
         #         self.Conv2d_2b_3x3 = BasicConv2d(32, 64, kernel_size=3, padding=1)
         #         self.Conv2d_3b_1x1 = BasicConv2d(64, 80, kernel_size=1)
         #         self.Conv2d_4a_3x3 = BasicConv2d(80, 192, kernel_size=3)
-        self.Mixed_5b = InceptionA(192, pool_features=32)
-        self.Mixed_5c = InceptionA(256, pool_features=64)
-        self.Mixed_5d = InceptionA(288, pool_features=64)
-        self.Mixed_6a = InceptionB(288)
-        self.Mixed_6b = InceptionC(768, channels_7x7=128)
-        self.Mixed_6c = InceptionC(768, channels_7x7=160)
-        self.Mixed_6d = InceptionC(768, channels_7x7=160)
-        self.Mixed_6e = InceptionC(768, channels_7x7=192)
+        self.Mixed_5b = InceptionA(192, pool_features=32, activation_fn=activation_fn)
+        self.Mixed_5c = InceptionA(256, pool_features=64, activation_fn=activation_fn)
+        self.Mixed_5d = InceptionA(288, pool_features=64, activation_fn=activation_fn)
+        self.Mixed_6a = InceptionB(288, activation_fn=activation_fn)
+        self.Mixed_6b = InceptionC(768, channels_7x7=128, activation_fn=activation_fn)
+        self.Mixed_6c = InceptionC(768, channels_7x7=160, activation_fn=activation_fn)
+        self.Mixed_6d = InceptionC(768, channels_7x7=160, activation_fn=activation_fn)
+        self.Mixed_6e = InceptionC(768, channels_7x7=192, activation_fn=activation_fn)
         if aux_logits:
-            self.AuxLogits = InceptionAux(768, num_classes)
-        self.Mixed_7a = InceptionD(768)
-        self.Mixed_7b = InceptionE(1280)
-        self.Mixed_7c = InceptionE(2048)
+            self.AuxLogits = InceptionAux(768, num_classes, activation_fn=activation_fn)
+        self.Mixed_7a = InceptionD(768, activation_fn=activation_fn)
+        self.Mixed_7b = InceptionE(1280, activation_fn=activation_fn)
+        self.Mixed_7c = InceptionE(2048, activation_fn=activation_fn)
         self.fc = nn.Linear(2048, num_classes)
 
     #         for m in self.modules():
@@ -314,7 +314,7 @@ class BasicConv2d(nn.Module):
         super(BasicConv2d, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
         self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
-        self.act = activation_fn(in_place=True)
+        self.act = activation_fn(inplace=True)
 
     def forward(self, x):
         x = self.conv(x)

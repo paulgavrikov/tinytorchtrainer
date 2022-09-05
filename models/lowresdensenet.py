@@ -106,7 +106,7 @@ class LowResDenseNet(nn.Module):
         if activation_fn is None:
             activation_fn = nn.ReLU
 
-        self.activation = activation_fn(in_place=True)
+        self.activation = activation_fn(inplace=True)
         # First convolution
 
         # CIFAR-10: kernel_size 7 ->3, stride 2->1, padding 3->1
