@@ -10,7 +10,7 @@ class ResidualBlock(nn.Module):
     A residual block as defined by He et al.
     """
 
-    def __init__(self, in_channels, out_channels, kernel_size, padding, stride, norm_layer=None):
+    def __init__(self, in_channels, out_channels, kernel_size, padding, stride, activation_fn, norm_layer=None):
         super(ResidualBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -32,7 +32,7 @@ class ResidualBlock(nn.Module):
         else:
             self.downsample = None
 
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = activation_fn(inplace=True)
 
     def forward(self, x):
         residual = x
@@ -52,30 +52,33 @@ class LowResResNet9(nn.Module):
     """
     A Residual network.
     """
-    def __init__(self, in_channels=3, num_classes=10, norm_layer=None):
+    def __init__(self, in_channels=3, num_classes=10, norm_layer=None, activation_fn=None):
         super(LowResResNet9, self).__init__()
         
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
 
+        if activation_fn is None:
+            activation_fn = nn.ReLU
+
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
             norm_layer(num_features=64),
-            nn.ReLU(inplace=True),
+            activation_fn(inplace=True),
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False),
             norm_layer(num_features=128),
-            nn.ReLU(inplace=True),
+            activation_fn(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            ResidualBlock(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, norm_layer=norm_layer),
+            ResidualBlock(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, activation_fn=activation_fn, norm_layer=norm_layer),
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False),
             norm_layer(num_features=256),
-            nn.ReLU(inplace=True),
+            activation_fn(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1, bias=False),
             norm_layer(num_features=512),
-            nn.ReLU(inplace=True),
+            activation_fn(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            ResidualBlock(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1, norm_layer=norm_layer),
+            ResidualBlock(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1, activation_fn=activation_fn, norm_layer=norm_layer),
             nn.MaxPool2d(kernel_size=4, stride=4),
             nn.Flatten()
         )

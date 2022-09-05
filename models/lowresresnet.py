@@ -47,6 +47,7 @@ class BasicBlock(nn.Module):
         self,
         inplanes,
         planes,
+        activation_fn,
         stride=1,
         downsample=None,
         groups=1,
@@ -65,7 +66,7 @@ class BasicBlock(nn.Module):
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = norm_layer(planes)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = activation_fn(inplace=True)
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
@@ -99,6 +100,7 @@ class Bottleneck(nn.Module):
         self,
         inplanes,
         planes,
+        activation_fn,
         stride=1,
         downsample=None,
         groups=1,
@@ -118,7 +120,7 @@ class Bottleneck(nn.Module):
         self.bn2 = norm_layer(width)
         self.conv3 = conv1x1(width, planes * self.expansion)
         self.bn3 = norm_layer(planes * self.expansion)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = activation_fn(inplace=True)
         self.downsample = downsample
         self.stride = stride
         self.skip_residual = skip_residual
@@ -150,7 +152,7 @@ class Bottleneck(nn.Module):
 class PreactBasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
+    def __init__(self, inplanes, planes, activation_fn, stride=1, downsample=None, groups=1,
                  base_width=64, dilation=1, norm_layer=None, skip_residual=False):
         super(PreactBasicBlock, self).__init__()
 
@@ -166,11 +168,11 @@ class PreactBasicBlock(nn.Module):
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
 
         self.bn1 = norm_layer(inplanes)
-        self.relu1 = nn.ReLU(inplace=True)
+        self.relu1 = activation_fn(inplace=True)
         self.conv1 = conv3x3(inplanes, planes, stride)
 
         self.bn2 = norm_layer(planes)
-        self.relu2 = nn.ReLU(inplace=True)
+        self.relu2 = activation_fn(inplace=True)
         self.conv2 = conv3x3(planes, planes)
 
         self.downsample = downsample
@@ -209,12 +211,16 @@ class LowResResNet(nn.Module):
         width_per_group=64,
         replace_stride_with_dilation=None,
         norm_layer=None,
-        skip_residual=False
+        skip_residual=False,
+        activation_fn=None
     ):
         super(LowResResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
+
+        if activation_fn is None:
+            activation_fn = nn.ReLU
 
         self.inplanes = 64
         self.dilation = 1
@@ -235,19 +241,19 @@ class LowResResNet(nn.Module):
         # END
 
         self.bn1 = norm_layer(self.inplanes)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = activation_fn(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0], skip_residual=skip_residual)
+        self.layer1 = self._make_layer(block, 64, layers[0], activation_fn, skip_residual=skip_residual)
         self.layer2 = self._make_layer(
-            block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0], skip_residual=skip_residual
+            block, 128, layers[1], activation_fn, stride=2, dilate=replace_stride_with_dilation[0], skip_residual=skip_residual
         )
         self.layer3 = self._make_layer(
-            block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1], skip_residual=skip_residual
+            block, 256, layers[2], activation_fn, stride=2, dilate=replace_stride_with_dilation[1], skip_residual=skip_residual
         )
         
         if len(layers) >= 4:
             self.layer4 = self._make_layer(
-                block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2], skip_residual=skip_residual
+                block, 512, layers[3], activation_fn, stride=2, dilate=replace_stride_with_dilation[2], skip_residual=skip_residual
             )
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
             self.fc = nn.Linear(512 * block.expansion, num_classes)

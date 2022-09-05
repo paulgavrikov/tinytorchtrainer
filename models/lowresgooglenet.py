@@ -23,8 +23,12 @@ def lowres_googlenet(**kwargs):
 class LowResGoogLeNet(nn.Module):
 
     # CIFAR10: aux_logits True->False
-    def __init__(self, in_channels=3, num_classes=10, aux_logits=False, transform_input=False):
+    def __init__(self, in_channels=3, num_classes=10, aux_logits=False, transform_input=False, activation_fn=None):
         super(LowResGoogLeNet, self).__init__()
+
+        if activation_fn is None:
+            activation_fn = nn.ReLU
+
         self.aux_logits = aux_logits
         self.transform_input = transform_input
 
@@ -175,10 +179,10 @@ class Inception(nn.Module):
 
 
 class InceptionAux(nn.Module):
-    def __init__(self, in_channels, num_classes):
+    def __init__(self, in_channels, num_classes, activation_fn):
         super(InceptionAux, self).__init__()
         self.conv = BasicConv2d(in_channels, 128, kernel_size=1)
-
+        self.act = activation_fn(in_place=True)
         self.fc1 = nn.Linear(2048, 1024)
         self.fc2 = nn.Linear(1024, num_classes)
 
@@ -190,7 +194,7 @@ class InceptionAux(nn.Module):
         # N x 128 x 4 x 4
         x = x.view(x.size(0), -1)
         # N x 2048
-        x = F.relu(self.fc1(x), inplace=True)
+        x = self.act(self.fc1(x))
         # N x 2048
         x = F.dropout(x, 0.7, training=self.training)
         # N x 2048
@@ -201,12 +205,13 @@ class InceptionAux(nn.Module):
 
 
 class BasicConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, **kwargs):
+    def __init__(self, in_channels, out_channels, activation_fn, **kwargs):
         super(BasicConv2d, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
         self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
+        self.act = activation_fn(in_place=True)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.bn(x)
-        return F.relu(x, inplace=True)
+        return self.act(x)

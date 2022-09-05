@@ -9,10 +9,10 @@ __all__ = ["LowResDenseNet", "lowres_densenet121", "lowres_densenet169", "lowres
 
 
 class _DenseLayer(nn.Sequential):
-    def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
+    def __init__(self, num_input_features, growth_rate, bn_size, drop_rate, activation_fn):
         super(_DenseLayer, self).__init__()
         self.add_module("norm1", nn.BatchNorm2d(num_input_features)),
-        self.add_module("relu1", nn.ReLU(inplace=True)),
+        self.add_module("relu1", activation_fn(inplace=True)),
         self.add_module(
             "conv1",
             nn.Conv2d(
@@ -24,7 +24,7 @@ class _DenseLayer(nn.Sequential):
             ),
         ),
         self.add_module("norm2", nn.BatchNorm2d(bn_size * growth_rate)),
-        self.add_module("relu2", nn.ReLU(inplace=True)),
+        self.add_module("relu2", activation_fn(inplace=True)),
         self.add_module(
             "conv2",
             nn.Conv2d(
@@ -48,20 +48,20 @@ class _DenseLayer(nn.Sequential):
 
 
 class _DenseBlock(nn.Sequential):
-    def __init__(self, num_layers, num_input_features, bn_size, growth_rate, drop_rate):
+    def __init__(self, num_layers, num_input_features, bn_size, growth_rate, drop_rate, activation_fn):
         super(_DenseBlock, self).__init__()
         for i in range(num_layers):
             layer = _DenseLayer(
-                num_input_features + i * growth_rate, growth_rate, bn_size, drop_rate
+                num_input_features + i * growth_rate, growth_rate, bn_size, drop_rate, activation_fn
             )
             self.add_module("denselayer%d" % (i + 1), layer)
 
 
 class _Transition(nn.Sequential):
-    def __init__(self, num_input_features, num_output_features):
+    def __init__(self, num_input_features, num_output_features, activation_fn):
         super(_Transition, self).__init__()
         self.add_module("norm", nn.BatchNorm2d(num_input_features))
-        self.add_module("relu", nn.ReLU(inplace=True))
+        self.add_module("relu", activation_fn(inplace=True))
         self.add_module(
             "conv",
             nn.Conv2d(
@@ -98,10 +98,15 @@ class LowResDenseNet(nn.Module):
         drop_rate=0,
         in_channels=3,
         num_classes=10,
+        activation_fn=None,
     ):
 
         super(LowResDenseNet, self).__init__()
 
+        if activation_fn is None:
+            activation_fn = nn.ReLU
+
+        self.activation = activation_fn(in_place=True)
         # First convolution
 
         # CIFAR-10: kernel_size 7 ->3, stride 2->1, padding 3->1
@@ -120,7 +125,7 @@ class LowResDenseNet(nn.Module):
                         ),
                     ),
                     ("norm0", nn.BatchNorm2d(num_init_features)),
-                    ("relu0", nn.ReLU(inplace=True)),
+                    ("relu0", activation_fn(inplace=True)),
                     ("pool0", nn.MaxPool2d(kernel_size=3, stride=2, padding=1)),
                 ]
             )
@@ -136,6 +141,7 @@ class LowResDenseNet(nn.Module):
                 bn_size=bn_size,
                 growth_rate=growth_rate,
                 drop_rate=drop_rate,
+                activation_fn=activation_fn
             )
             self.features.add_module("denseblock%d" % (i + 1), block)
             num_features = num_features + num_layers * growth_rate
@@ -143,6 +149,7 @@ class LowResDenseNet(nn.Module):
                 trans = _Transition(
                     num_input_features=num_features,
                     num_output_features=num_features // 2,
+                    activation_fn=activation_fn
                 )
                 self.features.add_module("transition%d" % (i + 1), trans)
                 num_features = num_features // 2
@@ -165,7 +172,7 @@ class LowResDenseNet(nn.Module):
 
     def forward(self, x):
         features = self.features(x)
-        out = F.relu(features, inplace=True)
+        out = self.activation(features)
         out = F.adaptive_avg_pool2d(out, (1, 1)).view(features.size(0), -1)
         out = self.fc(out)
         return out

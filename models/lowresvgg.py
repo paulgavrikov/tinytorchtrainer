@@ -1,6 +1,4 @@
 import os
-
-import torch
 import torch.nn as nn
 
 __all__ = [
@@ -17,12 +15,15 @@ __all__ = [
 
 
 class LowResVGG(nn.Module):
-    def __init__(self, features, num_classes=10, init_weights=True, in_channels=0):
+    def __init__(self, cfg, num_classes=10, init_weights=True, in_channels=0, activation_fn=None):
         super(LowResVGG, self).__init__()
 
         del in_channels  # unused
 
-        self.features = features
+        if activation_fn is None:
+            activation_fn = nn.ReLU
+
+        self.features = make_layers(cfgs[cfg], activation_fn, batch_norm=batch_norm, in_channels=kwargs["in_channels"])
         # CIFAR 10 (7, 7) to (1, 1)
         # self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -30,10 +31,10 @@ class LowResVGG(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(512 * 1 * 1, 4096),
             # nn.Linear(512 * 7 * 7, 4096),
-            nn.ReLU(True),
+            activation_fn(in_place=True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
-            nn.ReLU(True),
+            activation_fn(in_place=True),
             nn.Dropout(),
             nn.Linear(4096, num_classes),
         )
@@ -61,7 +62,7 @@ class LowResVGG(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-def make_layers(cfg, batch_norm=False, in_channels=3):
+def make_layers(cfg, activation_fn, batch_norm=False, in_channels=3):
     layers = []
     for v in cfg:
         if v == "M":
@@ -69,9 +70,9 @@ def make_layers(cfg, batch_norm=False, in_channels=3):
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
-                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+                layers += [conv2d, nn.BatchNorm2d(v), activation_fn(inplace=True)]
             else:
-                layers += [conv2d, nn.ReLU(inplace=True)]
+                layers += [conv2d, activation_fn(inplace=True)]
             in_channels = v
     return nn.Sequential(*layers)
 
@@ -127,7 +128,7 @@ cfgs = {
 
 def _vgg(cfg, batch_norm, **kwargs):
     kwargs["init_weights"] = True
-    model = LowResVGG(make_layers(cfgs[cfg], batch_norm=batch_norm, in_channels=kwargs["in_channels"]), **kwargs)
+    model = LowResVGG(cfg, **kwargs)
     return model
 
 
