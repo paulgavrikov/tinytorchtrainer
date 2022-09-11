@@ -7,6 +7,7 @@ import data
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
+from utils import str2bool
 
 
 def _hide_border(ax):
@@ -19,11 +20,12 @@ def _hide_border(ax):
     ax.imshow(np.zeros((1, 1, 3)))
 
 
-def plot_filters(layers, cols=32, sparse_thresh=0, **kwargs):
+def plot_filters(layers, cols=32, sparse_thresh=0, show_labels=True, **kwargs):
     rows = len(layers)
     fig, axes = plt.subplots(rows, cols, figsize=(8, rows * 8 / cols), squeeze=False)
     for i, (ax_row, (layer_name, layer_filters)) in enumerate(zip(axes, layers)):
-        ax_row[0].set_ylabel(layer_name, rotation=0, ha="right", va="center")
+        if show_labels:
+            ax_row[0].set_ylabel(layer_name, rotation=0, ha="right", va="center")
         t = abs(layer_filters).max()
         list(map(_hide_border, ax_row))
         for i, (ax, f) in enumerate(zip(ax_row, layer_filters / t)):
@@ -52,10 +54,8 @@ def main(args):
     vars(saved_args)["model_in_channels"] = dataset.in_channels
     vars(saved_args)["model_num_classes"] = dataset.num_classes
 
-    print(vars(saved_args))
-
     trainer = Trainer(saved_args)
-    fig = plot_filters_from_model(trainer.model)
+    fig = plot_filters_from_model(trainer.model, show_labels=args.show_labels)
     fig.savefig(args.save_file, bbox_inches="tight")
 
 
@@ -63,6 +63,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--load_checkpoint", type=str, default=None)
     parser.add_argument("--save_file", type=str, default="plot_convolutions.png")
+    parser.add_argument("--show_labels", type=str2bool, default=True)
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)
