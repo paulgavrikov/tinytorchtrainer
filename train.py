@@ -5,6 +5,7 @@ import os
 import argparse
 import yaml
 import sys
+import logging
 from utils import CSVLogger, ConsoleLogger, WandBLogger, CheckpointCallback, none2str, str2bool, prepend_key_prefix, seed_everything
 
 
@@ -18,16 +19,14 @@ class Trainer:
 
     def prepare_model(args, in_channels, num_classes):
         
-        if args.verbose:
-            print(f"Initializing {args.model}")
+        logging.info(f"Initializing {args.model}")
         
         model = models.get_model(args.model)(
             in_channels=in_channels, num_classes=num_classes)
 
         if args.load_checkpoint is not None:
             
-            if args.verbose:
-                print(f"Loading state from {args.load_checkpoint}")
+            logging.info(f"Loading state from {args.load_checkpoint}")
             
             state = torch.load(args.load_checkpoint, map_location="cpu")
 
@@ -37,27 +36,21 @@ class Trainer:
             model.load_state_dict(state)
 
         if args.reset_head:
-            if args.verbose:
-                print(f"Resetting head")
+            logging.info("Resetting head")
             model.fc.reset_parameters()
 
         if args.freeze_layers:
             for mname, module in model.named_modules():
                 if type(module).__name__ in args.freeze_layers.split(","):
                     for pname, param in module.named_parameters():
-                        if args.verbose:
-                            print(f"Freezing {mname}/{pname}")
+                        logging.debug(f"Freezing {mname}/{pname}")
                         param.requires_grad = False
 
         model.to(args.device)
 
-        if args.verbose:
-            print()
-            print("TRAINABLE PARAMETERS:")
-            print([f"{name} {p.shape}" for name, p in
-                   filter(lambda p: p[1].requires_grad, model.named_parameters())])
-            print(
-                f"TOTAL: {sum(list(map(lambda p: p.numel(), filter(lambda p: p.requires_grad, model.parameters()))))}")
+        logging.debug("TRAINABLE PARAMETERS:")
+        logging.debug([f"{name} {p.shape}" for name, p in filter(lambda p: p[1].requires_grad, model.named_parameters())])
+        logging.info(f"TOTAL: {sum(list(map(lambda p: p.numel(), filter(lambda p: p.requires_grad, model.parameters()))))}")
 
         return model
 
@@ -178,6 +171,10 @@ class Trainer:
 
 
 def main(args):
+
+    logging.basicConfig(level=logging.INFO)
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
 
     output_dir = args.output_dir
     for k, v in vars(args).items():

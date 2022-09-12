@@ -8,6 +8,7 @@ import pandas as pd
 import wandb
 import numpy as np
 import random
+import logging
 
 
 class CSVLogger:
@@ -26,7 +27,7 @@ class CSVLogger:
 class ConsoleLogger:
 
     def log(self, epoch, step, row):
-        print(f"[{datetime.now()}] Epoch {epoch} - {row}")
+        logging.info(f"[{datetime.now()}] Epoch {epoch} - {row}")
 
 
 class WandBLogger:
@@ -56,6 +57,7 @@ class CheckpointCallback:
     def save(self, epoch, step, model, metrics):
         if self.mode == "all":
             out_path = os.path.join(self.path, self.CKPT_PATTERN % (epoch, step))
+            logging.debug(f"saving {out_path}")
             torch.save(
                 {
                     "state_dict": model.state_dict(), 
