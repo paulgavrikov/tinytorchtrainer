@@ -110,3 +110,9 @@ def seed_everything(seed):
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
+
+
+def get_arg(args, key, fallback=None):
+    if key in vars(args):
+        return vars(args)[key]
+    return fallback
