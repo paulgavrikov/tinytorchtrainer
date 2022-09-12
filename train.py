@@ -42,12 +42,11 @@ class Trainer:
         if args.reset_all_but_conv2d:
             for mname, module in model.named_modules():
                 if type(module) is not torch.nn.Conv2d:
-                    if args.verbose:
-                        print(f"Resetting {mname}")
+                    logging.debug(f"Resetting {mname}")
                     try:
                         module.reset_parameters()
                     except:
-                        print(f"... failed")
+                        logging.debug("... failed")
 
         if args.freeze_layers:
             for mname, module in model.named_modules():
