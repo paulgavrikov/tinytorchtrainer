@@ -38,6 +38,16 @@ class Trainer:
         if args.reset_head:
             logging.info("Resetting head")
             model.fc.reset_parameters()
+            
+        if args.reset_all_but_conv2d:
+            for mname, module in model.named_modules():
+                if type(module) is not torch.nn.Conv2d:
+                    if args.verbose:
+                        print(f"Resetting {mname}")
+                    try:
+                        module.reset_parameters()
+                    except:
+                        print(f"... failed")
 
         if args.freeze_layers:
             for mname, module in model.named_modules():
@@ -214,6 +224,7 @@ if __name__ == "__main__":
                         default=None, choices=["all", None])
     parser.add_argument("--load_checkpoint", type=none2str, default=None)
     parser.add_argument("--reset_head", type=str2bool, default=False)
+    parser.add_argument("--reset_all_but_conv2d", type=str2bool, default=False)
 
     parser.add_argument("--model_in_channels", type=int, default=-1)
     parser.add_argument("--model_num_classes", type=int, default=-1)

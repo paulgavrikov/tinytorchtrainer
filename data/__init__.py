@@ -17,7 +17,14 @@ except:
 
 from torchvision.datasets.utils import download_and_extract_archive
 
-from utils import CloneProgress
+from git import RemoteProgress
+from tqdm import tqdm
+
+
+class CloneProgress(RemoteProgress):
+    def update(self, op_code, cur_count, max_count=None, message=""):
+        pbar = tqdm(total=max_count)
+        pbar.update(cur_count)
 
 
 class ImageNet1k(Dataset):
