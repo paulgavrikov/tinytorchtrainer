@@ -3,10 +3,11 @@ import torch.nn as nn
 
 
 def test_model_init():
-    for model_name in  models.all_classifiers:
+    for model_name in models.all_classifiers:
         print(model_name)
         model = models.get_model(model_name)(in_channels=3, num_classes=10)
         assert model is not None
+
 
 def test_model_init_with_activation():
 
