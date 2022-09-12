@@ -1,13 +1,11 @@
 import os
-
-import torch
 import torch.nn as nn
 
 __all__ = ["LowResMobileNetV2", "lowres_mobilenet_v2"]
 
 
 class ConvBNReLU(nn.Sequential):
-    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, groups=1):
+    def __init__(self, in_planes, out_planes, activation_fn, kernel_size=3, stride=1, groups=1):
         padding = (kernel_size - 1) // 2
         super(ConvBNReLU, self).__init__(
             nn.Conv2d(
@@ -20,12 +18,12 @@ class ConvBNReLU(nn.Sequential):
                 bias=False,
             ),
             nn.BatchNorm2d(out_planes),
-            nn.ReLU6(inplace=True),
+            activation_fn(inplace=True),
         )
 
 
 class InvertedResidual(nn.Module):
-    def __init__(self, inp, oup, stride, expand_ratio):
+    def __init__(self, inp, oup, stride, expand_ratio, activation_fn):
         super(InvertedResidual, self).__init__()
         self.stride = stride
         assert stride in [1, 2]
@@ -36,11 +34,11 @@ class InvertedResidual(nn.Module):
         layers = []
         if expand_ratio != 1:
             # pw
-            layers.append(ConvBNReLU(inp, hidden_dim, kernel_size=1))
+            layers.append(ConvBNReLU(inp, hidden_dim, activation_fn, kernel_size=1))
         layers.extend(
             [
                 # dw
-                ConvBNReLU(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
+                ConvBNReLU(hidden_dim, hidden_dim, activation_fn, stride=stride, groups=hidden_dim),
                 # pw-linear
                 nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
                 nn.BatchNorm2d(oup),
@@ -56,11 +54,14 @@ class InvertedResidual(nn.Module):
 
 
 class LowResMobileNetV2(nn.Module):
-    def __init__(self, in_channels=3, num_classes=10, width_mult=1.0):
+    def __init__(self, in_channels=3, num_classes=10, width_mult=1.0, activation_fn=None):
         super(LowResMobileNetV2, self).__init__()
         block = InvertedResidual
         input_channel = 32
         last_channel = 1280
+
+        if activation_fn is None:
+            activation_fn = nn.ReLU6
 
         # CIFAR10
         inverted_residual_setting = [
@@ -80,7 +81,7 @@ class LowResMobileNetV2(nn.Module):
         self.last_channel = int(last_channel * max(1.0, width_mult))
 
         # CIFAR10: stride 2 -> 1
-        features = [ConvBNReLU(in_channels, input_channel, stride=1)]
+        features = [ConvBNReLU(in_channels, input_channel, activation_fn, stride=1)]
         # END
 
         # building inverted residual blocks
@@ -89,11 +90,11 @@ class LowResMobileNetV2(nn.Module):
             for i in range(n):
                 stride = s if i == 0 else 1
                 features.append(
-                    block(input_channel, output_channel, stride, expand_ratio=t)
+                    block(input_channel, output_channel, stride, expand_ratio=t, activation_fn=activation_fn)
                 )
                 input_channel = output_channel
         # building last several layers
-        features.append(ConvBNReLU(input_channel, self.last_channel, kernel_size=1))
+        features.append(ConvBNReLU(input_channel, self.last_channel, activation_fn, kernel_size=1))
         # make it nn.Sequential
         self.features = nn.Sequential(*features)
 

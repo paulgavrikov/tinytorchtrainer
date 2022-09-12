@@ -1,15 +1,15 @@
-from ctypes import LibraryLoader
 import torch
 import sys
 import argparse
 from train import Trainer
-from utils import NormalizedModel
 import os
 import data
-from tqdm import tqdm
+from utils import str2bool
 
 
 def main(args):
+    assert args.batch_size <= args.n_probes
+
     ckpt = torch.load(args.load_checkpoint, map_location="cpu")
     saved_args = argparse.Namespace()
 
@@ -26,9 +26,6 @@ def main(args):
     vars(saved_args)["model_num_classes"] = dataset.num_classes
 
     trainer = Trainer(saved_args)
-
-    all_x = []
-    all_y = []
     loader = None
 
     if args.data_split == "val":
@@ -40,7 +37,7 @@ def main(args):
 
     correct = 0
     total = 0
-    
+
     with torch.no_grad():
         for i, (x, y) in enumerate(loader):
 
@@ -51,21 +48,25 @@ def main(args):
             orig_pred = torch.nn.Sigmoid()(trainer.model(x).detach())
             y = orig_pred.argmax().item()
 
-            x = x.repeat(args.n_probes, 1, 1, 1)
-            
-            delta = torch.FloatTensor(x.shape).uniform_(-args.eps, args.eps).to(trainer.device)
 
-            y_pred = trainer.model(x + delta)
+            for b in range(args.n_probes // args.batch_size):
+                x = x.repeat(args.batch_size, 1, 1, 1)
 
-            correct_batch = (y_pred.argmax(axis=1) == y).sum().item()
-            total_batch = len(x)
+                delta = torch.FloatTensor(x.shape).uniform_(-args.eps, args.eps).to(trainer.device)
 
-            print(f"[{i+1}/{args.n_samples if args.n_samples != -1 else len(loader)}] Batch Accuracy: {correct_batch/total_batch} with confidence {orig_pred.max().item()}")
+                y_pred = trainer.model(x + delta)
 
-            correct += correct_batch
-            total += len(x)
-        
+                correct_batch = (y_pred.argmax(axis=1) == y).sum().item()
+                total_batch = len(x)
+
+                print(f"[{i+1}/{args.n_samples if args.n_samples != -1 else len(loader)}] \
+                        Batch Accuracy: {correct_batch/total_batch} with confidence {orig_pred.max().item()}")
+
+                correct += correct_batch
+                total += len(x)
+
     print(f"Accuracy: {correct/total}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -75,7 +76,9 @@ if __name__ == "__main__":
     parser.add_argument("--eps", type=float, default=8/255)
     parser.add_argument("--data_split", type=str, default="val", choices=["train", "val"])
     parser.add_argument("--n_samples", type=int, default=-1)
-    parser.add_argument("--n_probes", type=int, default=512)
+    parser.add_argument("--n_probes", type=int, default=16384)
+    parser.add_argument("--batch_size", type=int, default=512)
+    parser.add_argument("--verbose", type=str2bool, default=False)
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)

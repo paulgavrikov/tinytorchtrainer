@@ -8,21 +8,25 @@ __all__ = ['LowResLeNet5', 'lowres_lenet5']
 
 class LowResLeNet5(nn.Module):
 
-    def __init__(self, in_channels: int = 3, num_classes: int = 10) -> None:
+    def __init__(self, in_channels: int = 3, num_classes: int = 10, activation_fn=None) -> None:
         super(LowResLeNet5, self).__init__()
+
+        if activation_fn is None:
+            activation_fn = nn.Sigmoid
+
         self.features = nn.Sequential(
             nn.Conv2d(in_channels, 6, kernel_size=5, padding=2),
-            nn.Sigmoid(),
+            activation_fn(),
             nn.AvgPool2d(kernel_size=(2, 2), stride=2),
             nn.Conv2d(6, 16, kernel_size=5),
-            nn.Sigmoid(),
+            activation_fn(),
             nn.AvgPool2d(kernel_size=(2, 2), stride=2),
         )
         self.fc = nn.Sequential(
             nn.LazyLinear(120),
-            nn.Sigmoid(),
+            activation_fn(),
             nn.Linear(120, 84),
-            nn.Sigmoid(),
+            activation_fn(),
             nn.Linear(84, num_classes),
         )
 
