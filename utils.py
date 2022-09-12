@@ -64,11 +64,6 @@ class CheckpointCallback:
                 }, out_path)
 
 
-class CloneProgress(RemoteProgress):
-    def update(self, op_code, cur_count, max_count=None, message=""):
-        pbar = tqdm(total=max_count)
-        pbar.update(cur_count)
-
     
 class NormalizedModel(torch.nn.Module):
     
