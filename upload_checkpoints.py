@@ -28,6 +28,6 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("wandb_project", type=str, default=None)
+    parser.add_argument("wandb_project", type=str)
     _args = parser.parse_args()
     main(_args)
