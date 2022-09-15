@@ -4,11 +4,15 @@ import argparse
 from train import Trainer
 import os
 import data
-from utils import str2bool
+from utils import none2str, str2bool
+import wandb
 
 
 def main(args):
     assert args.batch_size <= args.n_probes
+
+    if args.wandb_project:
+        wandb.init(config=vars(args), project=args.wandb_project)
 
     ckpt = torch.load(args.load_checkpoint, map_location="cpu")
     saved_args = argparse.Namespace()
@@ -48,37 +52,53 @@ def main(args):
             orig_pred = torch.nn.Sigmoid()(trainer.model(x).detach())
             y = orig_pred.argmax().item()
 
+            conf = orig_pred.max().item()
 
-            for b in range(args.n_probes // args.batch_size):
-                x = x.repeat(args.batch_size, 1, 1, 1)
+            print(f"confidence on input {conf}")
 
+            x = x.repeat(args.batch_size, 1, 1, 1)
+            correct_sample = 0
+            total_sample = 0
+            for _ in range(args.n_probes // args.batch_size):
                 delta = torch.FloatTensor(x.shape).uniform_(-args.eps, args.eps).to(trainer.device)
 
-                y_pred = trainer.model(x + delta)
+                y_pred = torch.nn.Sigmoid()(trainer.model(x + delta))
 
                 correct_batch = (y_pred.argmax(axis=1) == y).sum().item()
                 total_batch = len(x)
 
-                print(f"[{i+1}/{args.n_samples if args.n_samples != -1 else len(loader)}] \
-                        Batch Accuracy: {correct_batch/total_batch} with confidence {orig_pred.max().item()}")
+                print(f"batch accuracy: {correct_batch/total_batch}")
 
-                correct += correct_batch
-                total += len(x)
+                correct_sample += correct_batch
+                total_sample += len(x)
+
+                
+            print(f"sample accuracy: {correct_sample/total_sample}")
+
+            correct += correct_sample
+            total += total_sample
+
+            if args.wandb_project:
+                wandb.log({"sample/id": i, "sample/acc": correct_sample / total_sample, "sample/conf": conf})
+            
+            print(f"[{i+1}/{args.n_samples if args.n_samples != -1 else len(loader)}] mean accuracy: {correct / total} (N={total})")
 
     print(f"Accuracy: {correct/total}")
+    if args.wandb_project:
+        wandb.log({"total/acc": correct / total})
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--load_checkpoint", type=str, default=None)
     parser.add_argument("--device", type=str, default="cuda:0")
-    # parser.add_argument("--norm", type=str, default="Linf")
     parser.add_argument("--eps", type=float, default=8/255)
     parser.add_argument("--data_split", type=str, default="val", choices=["train", "val"])
     parser.add_argument("--n_samples", type=int, default=-1)
     parser.add_argument("--n_probes", type=int, default=16384)
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--verbose", type=str2bool, default=False)
+    parser.add_argument("--wandb_project", type=none2str, default=None)
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)

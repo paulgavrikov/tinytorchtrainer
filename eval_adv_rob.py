@@ -7,9 +7,15 @@ from autoattack import AutoAttack
 from utils import NormalizedModel
 import os
 import data
+from utils import none2str
+import wandb
 
 
 def main(args):
+
+    if args.wandb_project:
+        wandb.init(config=vars(args), project=args.wandb_project)
+
     ckpt = torch.load(args.load_checkpoint, map_location="cpu")
     saved_args = argparse.Namespace()
 
@@ -55,7 +61,7 @@ def main(args):
 
     all_x = all_x * model.std + model.mean  # unnormalize samples for AA
 
-    adversary = AutoAttack(model, norm=args.norm, eps=args.eps)
+    adversary = AutoAttack(model, norm=args.norm, eps=args.eps, attacks_to_run=args.attacks_to_run.split(","), log_path=args.log_path)
     _ = adversary.run_standard_evaluation(all_x, all_y)
 
 
@@ -67,6 +73,9 @@ if __name__ == "__main__":
     parser.add_argument("--eps", type=float, default=8/255)
     parser.add_argument("--data_split", type=str, default="val", choices=["train", "val"])
     parser.add_argument("--n_samples", type=int, default=-1)
+    parser.add_argument("--attacks_to_run", type=str, default="")
+    parser.add_argument("--log_path", type=none2str, default=None)
+    parser.add_argument("--wandb_project", type=none2str, default=None)
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)
