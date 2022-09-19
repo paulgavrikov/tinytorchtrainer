@@ -50,9 +50,9 @@ class Trainer:
             logging.info("Resetting head")
             model.fc.reset_parameters()
 
-        if get_arg(args, "reset_all_but_conv2d"):
+        if get_arg(args, "reset_all_but_conv2d_3x3"):
             for mname, module in model.named_modules():
-                if type(module) is not torch.nn.Conv2d:
+                if type(module) is not torch.nn.Conv2d or module.kernel_size != (3, 3):
                     logging.debug(f"Resetting {mname}")
                     try:
                         module.reset_parameters()
@@ -62,6 +62,14 @@ class Trainer:
         if get_arg(args, "freeze_layers"):
             for mname, module in model.named_modules():
                 if type(module).__name__ in args.freeze_layers.split(","):
+                    for pname, param in module.named_parameters():
+                        logging.debug(f"Freezing {mname}/{pname}")
+                        param.requires_grad = False
+
+
+        if get_arg(args, "freeze_conv2d_3x3"):
+            for mname, module in model.named_modules():
+                if type(module) is torch.nn.Conv2d and module.kernel_size == (3, 3):
                     for pname, param in module.named_parameters():
                         logging.debug(f"Freezing {mname}/{pname}")
                         param.requires_grad = False
@@ -217,6 +225,8 @@ class Trainer:
 
 def main(args):
 
+    assert not (args.freeze_layers and args.freeze_conv2d_3x3)
+
     logging.basicConfig(level=logging.INFO)
     if get_arg(args, "verbose"):
         logging.basicConfig(level=logging.DEBUG)
@@ -260,7 +270,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--load_checkpoint", type=none2str, default=None)
     parser.add_argument("--reset_head", type=str2bool, default=False)
-    parser.add_argument("--reset_all_but_conv2d", type=str2bool, default=False)
+    parser.add_argument("--reset_all_but_conv2d_3x3", type=str2bool, default=False)
+    parser.add_argument("--freeze_conv2d_3x3", type=str2bool, default=False)
 
     parser.add_argument("--model_in_channels", type=int, default=-1)
     parser.add_argument("--model_num_classes", type=int, default=-1)
