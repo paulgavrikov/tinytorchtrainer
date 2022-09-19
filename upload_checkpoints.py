@@ -19,10 +19,12 @@ def main(args):
         best_row = df.iloc[df["val/acc"].argmax()]
 
         checkpoint_dir = os.path.join(output_dir, f"checkpoints/epoch={int(best_row.epoch)}-step={int(best_row.step)}.ckpt")
+        checkpoint_best_dir = os.path.join(output_dir, f"checkpoints/best.ckpt")
 
-        artifact = wandb.Artifact("best.ckpt", type="model", metadata=best_row.to_dict())
-        artifact.add_file(checkpoint_dir)
-        run.log_artifact(artifact) 
+        os.system(f"cp {checkpoint_dir} {checkpoint_best_dir}")
+ 
+        wandb.init(project=args.wandb_project, id=run.id, resume="must", reinit=True)
+        wandb.save(checkpoint_best_dir) 
 
 
 
