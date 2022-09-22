@@ -584,7 +584,7 @@ class CIFAR100Data():
 
 
 class CINIC10Data():
-    def __init__(self, root_dir, batch_size, num_workers, part="all"):
+    def __init__(self, root_dir, part="all"):
         super().__init__()
         assert part in ["all", "imagenet", "cifar10"]
         self.part = part
@@ -643,21 +643,6 @@ class TensorData():
         super().__init__()
         self.root_dir = root_dir
         self.data_class = data_class
-        self.train_transform = transforms.Compose(
-            [
-                transforms.Resize((32, 32)),
-                transforms.ToTensor(),
-                transforms.Normalize(self.mean, self.std),
-
-            ]
-        )
-        self.val_transform = transforms.Compose(
-            [
-                transforms.Resize((32, 32)),
-                transforms.ToTensor(),
-                transforms.Normalize(self.mean, self.std),
-            ]
-        )
 
     def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
         dataset = self.data_class(root=self.root_dir, train=True, transform=self.train_transform, download=True)
@@ -694,6 +679,21 @@ class MNISTData(TensorData):
         self.std = (0.3081,)
         self.num_classes = 10
         self.in_channels = 1
+        self.train_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
 
 
 class KMNISTData(TensorData):
@@ -704,6 +704,21 @@ class KMNISTData(TensorData):
         self.std = (0.3483,)
         self.num_classes = 49
         self.in_channels = 1
+        self.train_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
 
 
 class FashionMNISTData(TensorData):
@@ -714,6 +729,21 @@ class FashionMNISTData(TensorData):
         self.std = (0.3530,)
         self.num_classes = 10
         self.in_channels = 1
+        self.train_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
 
 
 class CIFAR10Corruptions(Dataset):
