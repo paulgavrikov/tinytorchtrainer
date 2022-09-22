@@ -14,7 +14,7 @@ def main(args):
         vars(saved_args)[k] = v
 
     dataset = data.get_dataset(saved_args.dataset)(os.path.join(
-            saved_args.dataset_dir, saved_args.dataset), saved_args.batch_size, saved_args.num_workers)
+            saved_args.dataset_dir, saved_args.dataset))
 
     vars(saved_args)["load_checkpoint"] = args.load_checkpoint
     vars(saved_args)["device"] = args.device
@@ -26,7 +26,7 @@ def main(args):
 
     criterion = torch.nn.CrossEntropyLoss()
 
-    metrics = trainer.validate(trainer.model, dataset.val_dataloader(), criterion, trainer.device)
+    metrics = trainer.validate(trainer.model, dataset.val_dataloader(saved_args.batch_size, saved_args.num_workers), criterion, trainer.device)
     print(metrics)
 
 

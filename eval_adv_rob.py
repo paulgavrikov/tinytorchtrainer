@@ -30,7 +30,7 @@ def main(args):
         loader_batch = saved_args.batch_size
 
     dataset = data.get_dataset(saved_args.dataset)(os.path.join(
-            saved_args.dataset_dir, saved_args.dataset), loader_batch, saved_args.num_workers)
+            saved_args.dataset_dir, saved_args.dataset))
 
     vars(saved_args)["model_in_channels"] = dataset.in_channels
     vars(saved_args)["model_num_classes"] = dataset.num_classes
@@ -42,9 +42,9 @@ def main(args):
     loader = None
 
     if args.data_split == "val":
-        loader = dataset.val_dataloader()
+        loader = dataset.val_dataloader(loader_batch, saved_args.num_workers)
     elif args.data_split == "train":
-        loader = dataset.train_dataloader()
+        loader = dataset.train_dataloader(loader_batch, saved_args.num_workers)
 
     for x, y in loader:
         all_x.append(x.to(trainer.device))
@@ -61,7 +61,7 @@ def main(args):
 
     all_x = all_x * model.std + model.mean  # unnormalize samples for AA
 
-    adversary = AutoAttack(model, norm=args.norm, eps=args.eps, attacks_to_run=args.attacks_to_run.split(","), log_path=args.log_path)
+    adversary = AutoAttack(model, norm=args.norm, eps=args.eps, attacks_to_run=args.attacks_to_run.split(","), log_path=args.log_path, device=trainer.device)
     _ = adversary.run_standard_evaluation(all_x, all_y)
 
 

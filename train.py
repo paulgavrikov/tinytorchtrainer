@@ -66,7 +66,6 @@ class Trainer:
                         logging.debug(f"Freezing {mname}/{pname}")
                         param.requires_grad = False
 
-
         if get_arg(args, "freeze_conv2d_3x3"):
             for mname, module in model.named_modules():
                 if type(module) is torch.nn.Conv2d and module.kernel_size == (3, 3):
@@ -137,8 +136,8 @@ class Trainer:
         return {"acc": correct / total, "loss": total_loss / total}
 
     def fit(self, dataset, output_dir=None):
-        trainloader = dataset.train_dataloader()
-        valloader = dataset.val_dataloader()
+        trainloader = dataset.train_dataloader(self.args.batch_size, self.args.num_workers)
+        valloader = dataset.val_dataloader(self.args.batch_size, self.args.num_workers)
 
         if self.args.optimizer == "sgd":
             self.opt = torch.optim.SGD(
@@ -239,7 +238,7 @@ def main(args):
     seed_everything(args.seed)
 
     dataset = data.get_dataset(args.dataset)(
-        os.path.join(args.dataset_dir, args.dataset), args.batch_size, args.num_workers
+        os.path.join(args.dataset_dir, args.dataset)
     )
 
     if args.model_in_channels == -1:
