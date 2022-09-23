@@ -18,7 +18,7 @@ class CSVLogger:
         self.log_file = log_file 
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
 
-    def log(self, epoch, step, row):
+    def log(self, epoch, step, row, silent=False):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
         self.rows.append(row)
         pd.DataFrame(self.rows).to_csv(self.log_file, index=False)
@@ -26,8 +26,9 @@ class CSVLogger:
 
 class ConsoleLogger:
 
-    def log(self, epoch, step, row):
-        logging.info(f"[{datetime.now()}] Epoch {epoch} - {row}")
+    def log(self, epoch, step, row, silent=False):
+        if not silent:
+            logging.info(f"[{datetime.now()}] Epoch {epoch} - {row}")
 
 
 class WandBLogger:
@@ -35,7 +36,7 @@ class WandBLogger:
     def __init__(self, project, args):
         wandb.init(config=args, project=project)
 
-    def log(self, epoch, step, row):
+    def log(self, epoch, step, row, silent=False):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
         wandb.log(row)
         

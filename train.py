@@ -90,7 +90,7 @@ class Trainer:
 
         return model
 
-    def train(self, model, trainloader, opt, criterion, device, scheduler=None):
+    def train(self, model, trainloader, opt, criterion, device, scheduler=None, loggers=[]):
 
         correct = 0
         total = 0
@@ -106,17 +106,23 @@ class Trainer:
             loss.backward()
             opt.step()
 
-            total_loss += loss.item() * len(y)
-            correct += (y_pred.argmax(axis=1) == y).sum().item()
+            batch_loss = loss.item() * len(y)
+            batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
+
+            correct += batch_correct
+            total_loss += batch_loss
             total += len(y)
             self.steps += 1
+
+            for logger in loggers:
+                logger.log(self.epoch, self.steps, {"train/batch_acc": correct / total, "train/batch_loss": total_loss / total}, silent=True)
 
         if scheduler:
             scheduler.step()
 
         return {"acc": correct / total, "loss": total_loss / total}
 
-    def validate(self, model, valloader, criterion, device):
+    def validate(self, model, valloader, criterion, device, loggers=[]):
         correct = 0
         total = 0
         total_loss = 0
@@ -197,6 +203,7 @@ class Trainer:
                 self.criterion,
                 self.device,
                 self.scheduler,
+                loggers=loggers
             )
             val_metrics = self.validate(
                 self.model, valloader, self.criterion, self.device
