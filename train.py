@@ -163,6 +163,20 @@ class Trainer:
                 weight_decay=self.args.weight_decay,
             )
             self.scheduler = None
+        elif self.args.optimizer == "rmsprop":
+            self.opt = torch.optim.RMSprop(
+                filter(lambda x: x.requires_grad, self.model.parameters()),
+                lr=self.args.learning_rate,
+                weight_decay=self.args.weight_decay,
+            )
+            self.scheduler = None
+        elif self.args.optimizer == "adamw":
+            self.opt = torch.optim.AdamW(
+                filter(lambda x: x.requires_grad, self.model.parameters()),
+                lr=self.args.learning_rate,
+                weight_decay=self.args.weight_decay,
+            )
+            self.scheduler = None
 
         self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -287,7 +301,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=0)
 
     # optimizer
-    parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd"])
+    parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
 
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-2)
