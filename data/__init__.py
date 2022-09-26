@@ -59,18 +59,14 @@ class ImageNet1k(Dataset):
 
 
 class ImageNet1kData():
-    def __init__(self, root_dir, batch_size, num_workers):
+    def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.485, 0.456, 0.406)
         self.std = (0.229, 0.224, 0.225)
         self.num_classes = 1000
         self.in_channels = 3
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.RandomResizedCrop(224),
                 transforms.RandomHorizontalFlip(),
@@ -78,19 +74,7 @@ class ImageNet1kData():
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = ImageNet1k(root=self.root_dir, split="train", transform=transform)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
-        )
-        return dataloader
-
-    def val_dataloader(self):
-        transform = transforms.Compose(
+        self.val_transform = transforms.Compose(
             [
                 transforms.Resize(256),
                 transforms.CenterCrop(224),
@@ -98,18 +82,32 @@ class ImageNet1kData():
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = ImageNet1k(root=self.root_dir, split="val", transform=transform)
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = ImageNet1k(root=self.root_dir, split="train", transform=self.train_transform)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def test_dataloader(self):
-        return self.val_dataloader()
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = ImageNet1k(root=self.root_dir, split="val", transform=self.val_transform)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
 
 
 class GroceryStore(Dataset):
@@ -159,18 +157,14 @@ class GroceryStore(Dataset):
 
 
 class GroceryStoreData():
-    def __init__(self, root_dir, batch_size, num_workers):
+    def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.5525, 0.4104, 0.2445)
         self.std = (0.2205, 0.1999, 0.1837)
         self.num_classes = 43  # needs to be one more than the 42 classes because its start with a 0. Dont ask why
         self.in_channels = 3
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.Resize(48),
                 transforms.RandomResizedCrop(32),
@@ -179,19 +173,7 @@ class GroceryStoreData():
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = GroceryStore(root=self.root_dir, split="train", transform=transform,download=True)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
-        )
-        return dataloader
-
-    def val_dataloader(self):
-        transform = transforms.Compose(
+        self.val_transform = transforms.Compose(
             [
                 transforms.Resize(48),
                 transforms.CenterCrop(32),
@@ -199,33 +181,43 @@ class GroceryStoreData():
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = GroceryStore(root=self.root_dir, split="val", transform=transform,download=True)
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = GroceryStore(root=self.root_dir, split="train", transform=self.train_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def test_dataloader(self):
-        return self.val_dataloader()
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = GroceryStore(root=self.root_dir, split="val", transform=self.val_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
 
 
 class CIFAR10Data():
-    def __init__(self, root_dir, batch_size, num_workers):
+    def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.49139968, 0.48215841, 0.44653091)
         self.std = (0.24703223, 0.24348513, 0.26158784)
         self.num_classes = 10
         self.in_channels = 3
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.RandomCrop(32, padding=4),
                 transforms.RandomHorizontalFlip(),
@@ -233,59 +225,67 @@ class CIFAR10Data():
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = CIFAR10(root=self.root_dir, train=True, transform=transform, download=True)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
-        )
-        return dataloader
-
-    def val_dataloader(self):
-        transform = transforms.Compose(
+        self.val_transform = transforms.Compose(
             [
                 transforms.ToTensor(),
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = CIFAR10(root=self.root_dir, train=False, transform=transform, download=True)
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = CIFAR10(root=self.root_dir, train=True, transform=self.train_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def test_dataloader(self):
-        return self.val_dataloader()
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = CIFAR10(root=self.root_dir, train=False, transform=self.val_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
 
 
 class SUN397Data():
-    def __init__(self, root_dir, batch_size, num_workers):
+    def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.485, 0.456, 0.406)
         self.std = (0.229, 0.224, 0.225)
         self.num_classes = 899
         self.in_channels = 3
         self.valid_size = 0.15
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.RandomResizedCrop(32),
                 transforms.ToTensor(),
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = SUN397(root=self.root_dir, transform=transform, download=True)
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize(38),
+                transforms.RandomCrop(32),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = SUN397(root=self.root_dir, transform=self.train_transform, download=True)
 
         num_train = len(dataset)
         indices = list(range(num_train))
@@ -296,25 +296,18 @@ class SUN397Data():
 
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
             sampler=train_sampler,
-            shuffle=False,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def val_dataloader(self):
-        transform = transforms.Compose(
-            [
-                transforms.Resize(38),
-                transforms.RandomCrop(32),
-                transforms.ToTensor(),
-                transforms.Normalize(self.mean, self.std),
-            ]
-        )
-        dataset = SUN397(root=self.root_dir, transform=transform, download=True)
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = SUN397(root=self.root_dir, transform=self.val_transform, download=True)
 
         num_train = len(dataset)
         indices = list(range(num_train))
@@ -325,16 +318,15 @@ class SUN397Data():
 
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
             sampler=valid_sampler,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
-
-    def test_dataloader(self):
-        return self.val_dataloader()
 
 
 class TinyImageNetPaths:
@@ -444,135 +436,112 @@ class TinyImageNet(Dataset):
 
 
 class TinyImageNetData():
-    def __init__(self, root_dir, batch_size, num_workers):
+    def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.4802, 0.4481, 0.3975)
         self.std = (0.2764, 0.2689, 0.2816)
         self.num_classes = 200
         self.in_channels = 3
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.RandomResizedCrop(56),
                 transforms.ToTensor(),
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = TinyImageNet(root=self.root_dir, mode="train", transform=transform,download=True)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
-        )
-        return dataloader
-
-    def val_dataloader(self):
-        transform = transforms.Compose(
+        self.val_transform = transforms.Compose(
             [
                 transforms.CenterCrop(56),
                 transforms.ToTensor(),
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = TinyImageNet(root=self.root_dir, mode="val", transform=transform)
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = TinyImageNet(root=self.root_dir, mode="train", transform=self.train_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def test_dataloader(self):
-        transform = transforms.Compose(
-            [
-                transforms.Resize(32),
-                transforms.ToTensor(),
-                transforms.Normalize(self.mean, self.std),
-            ]
-        )
-        dataset = TinyImageNet(root=self.root_dir, mode="test", transform=transform)
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = TinyImageNet(root=self.root_dir, mode="val", transform=self.val_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
 
 class SVHNData():
-    def __init__(self, root_dir, batch_size, num_workers):
+    def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.4377, 0.4438, 0.4728)
         self.std = (0.1980, 0.2010, 0.1970)
         self.num_classes = 10
         self.in_channels = 3
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.ToTensor(),
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = SVHN(root=self.root_dir, split="train", transform=transform, download=True)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
-        )
-        return dataloader
-
-    def val_dataloader(self):
-        transform = transforms.Compose(
+        self.val_transform = transforms.Compose(
             [
                 transforms.ToTensor(),
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = SVHN(root=self.root_dir, split="test", transform=transform, download=True)
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = SVHN(root=self.root_dir, split="train", transform=self.train_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def test_dataloader(self):
-        return self.val_dataloader()
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = SVHN(root=self.root_dir, split="test", transform=self.val_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
 
 
 class CIFAR100Data():
-    def __init__(self, root_dir, batch_size, num_workers):
+    def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.50707516, 0.48654887, 0.44091784)
         self.std = (0.26733429, 0.25643846, 0.27615047)
         self.num_classes = 100
         self.in_channels = 3
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.RandomCrop(32, padding=4),
                 transforms.RandomHorizontalFlip(),
@@ -580,53 +549,51 @@ class CIFAR100Data():
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = CIFAR100(root=self.root_dir, train=True, transform=transform, download=True)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
-        )
-        return dataloader
-
-    def val_dataloader(self):
-        transform = transforms.Compose(
+        self.val_transform = transforms.Compose(
             [
                 transforms.ToTensor(),
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = CIFAR100(root=self.root_dir, train=False, transform=transform, download=True)
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = CIFAR100(root=self.root_dir, train=True, transform=self.train_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def test_dataloader(self):
-        return self.val_dataloader()
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = CIFAR100(root=self.root_dir, train=False, transform=self.val_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
 
 
 class CINIC10Data():
-    def __init__(self, root_dir, batch_size, num_workers, part="all"):
+    def __init__(self, root_dir, part="all"):
         super().__init__()
         assert part in ["all", "imagenet", "cifar10"]
         self.part = part
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.mean = (0.47889522, 0.47227842, 0.43047404)  # from https://github.com/BayesWatch/cinic-10
         self.std = (0.24205776, 0.23828046, 0.25874835)
         self.num_classes = 10
         self.in_channels = 3
-
-    def train_dataloader(self):
-        transform = transforms.Compose(
+        self.train_transform = transforms.Compose(
             [
                 transforms.RandomCrop(32, padding=4),
                 transforms.RandomHorizontalFlip(),
@@ -634,119 +601,149 @@ class CINIC10Data():
                 transforms.Normalize(self.mean, self.std),
             ]
         )
-        dataset = ImageFolder(root=os.path.join(self.root_dir, "train"), transform=transform, is_valid_file= \
+        self.val_transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = ImageFolder(root=os.path.join(self.root_dir, "train"), transform=self.train_transform, is_valid_file= \
             lambda path: (self.part == "all") or \
                          (self.part == "imagenet" and not os.path.basename(path).startswith("cifar10-")) or \
                          (self.part == "cifar10" and os.path.basename(path).startswith("cifar10-")))
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def val_dataloader(self):
-        transform = transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize(self.mean, self.std),
-            ]
-        )
-        dataset = ImageFolder(root=os.path.join(self.root_dir, "valid"), transform=transform)
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = ImageFolder(root=os.path.join(self.root_dir, "valid"), transform=self.val_transform)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
-
-    def test_dataloader(self):
-        return self.val_dataloader()
 
 
 class TensorData():
-    def __init__(self, data_class, root_dir, batch_size, num_workers):
+    def __init__(self, data_class, root_dir):
         super().__init__()
         self.root_dir = root_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.data_class = data_class
 
-    def train_dataloader(self):
-        transform = transforms.Compose(
-            [
-                transforms.Resize((32, 32)),
-                transforms.ToTensor(),
-                transforms.Normalize(self.mean, self.std),
-
-            ]
-        )
-        dataset = self.data_class(root=self.root_dir, train=True, transform=transform, download=True)
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = self.data_class(root=self.root_dir, train=True, transform=self.train_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            shuffle=True,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
 
-    def val_dataloader(self):
-        transform = transforms.Compose(
-            [
-                transforms.Resize((32, 32)),
-                transforms.ToTensor(),
-                transforms.Normalize(self.mean, self.std),
-            ]
-        )
-        dataset = self.data_class(root=self.root_dir, train=False, transform=transform, download=True)
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = self.data_class(root=self.root_dir, train=False, transform=self.val_transform, download=True)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=False,
-            pin_memory=True,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
         )
         return dataloader
-
-    def test_dataloader(self):
-        return self.val_dataloader()
 
 
 class MNISTData(TensorData):
 
-    def __init__(self, root_dir, batch_size, num_workers):
-        super().__init__(MNIST, root_dir, batch_size, num_workers)
+    def __init__(self, root_dir):
+        super().__init__(MNIST, root_dir)
         self.mean = (0.1307,)
         self.std = (0.3081,)
         self.num_classes = 10
         self.in_channels = 1
+        self.train_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
 
 
 class KMNISTData(TensorData):
 
-    def __init__(self, root_dir, batch_size, num_workers):
-        super().__init__(KMNIST, root_dir, batch_size, num_workers)
+    def __init__(self, root_dir):
+        super().__init__(KMNIST, root_dir)
         self.mean = (0.1918,)
         self.std = (0.3483,)
         self.num_classes = 49
         self.in_channels = 1
+        self.train_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
 
 
 class FashionMNISTData(TensorData):
 
-    def __init__(self, root_dir, batch_size, num_workers):
-        super().__init__(FashionMNIST, root_dir, batch_size, num_workers)
+    def __init__(self, root_dir):
+        super().__init__(FashionMNIST, root_dir)
         self.mean = (0.2860,)
         self.std = (0.3530,)
         self.num_classes = 10
         self.in_channels = 1
+        self.train_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((32, 32)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
 
 
 class CIFAR10Corruptions(Dataset):

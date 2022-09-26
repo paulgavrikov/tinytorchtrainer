@@ -66,7 +66,6 @@ class Trainer:
                         logging.info(f"Freezing {mname}/{pname} {module}")
                         param.requires_grad = False
 
-
         if get_arg(args, "freeze_conv2d_3x3"):
             for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
                 if type(module) is torch.nn.Conv2d and module.kernel_size == (3, 3):
@@ -85,7 +84,7 @@ class Trainer:
 
         return model
 
-    def train(self, model, trainloader, opt, criterion, device, scheduler=None):
+    def train(self, model, trainloader, opt, criterion, device, scheduler=None, loggers=[]):
 
         correct = 0
         total = 0
@@ -101,17 +100,23 @@ class Trainer:
             loss.backward()
             opt.step()
 
-            total_loss += loss.item() * len(y)
-            correct += (y_pred.argmax(axis=1) == y).sum().item()
+            batch_loss = loss.item() * len(y)
+            batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
+
+            correct += batch_correct
+            total_loss += batch_loss
             total += len(y)
             self.steps += 1
+
+            for logger in loggers:
+                logger.log(self.epoch, self.steps, {"train/batch_acc": correct / total, "train/batch_loss": total_loss / total}, silent=True)
 
         if scheduler:
             scheduler.step()
 
         return {"acc": correct / total, "loss": total_loss / total}
 
-    def validate(self, model, valloader, criterion, device):
+    def validate(self, model, valloader, criterion, device, loggers=[]):
         correct = 0
         total = 0
         total_loss = 0
@@ -131,8 +136,8 @@ class Trainer:
         return {"acc": correct / total, "loss": total_loss / total}
 
     def fit(self, dataset, output_dir=None):
-        trainloader = dataset.train_dataloader()
-        valloader = dataset.val_dataloader()
+        trainloader = dataset.train_dataloader(self.args.batch_size, self.args.num_workers)
+        valloader = dataset.val_dataloader(self.args.batch_size, self.args.num_workers)
 
         if self.args.optimizer == "sgd":
             self.opt = torch.optim.SGD(
@@ -147,6 +152,20 @@ class Trainer:
             )
         elif self.args.optimizer == "adam":
             self.opt = torch.optim.Adam(
+                filter(lambda x: x.requires_grad, self.model.parameters()),
+                lr=self.args.learning_rate,
+                weight_decay=self.args.weight_decay,
+            )
+            self.scheduler = None
+        elif self.args.optimizer == "rmsprop":
+            self.opt = torch.optim.RMSprop(
+                filter(lambda x: x.requires_grad, self.model.parameters()),
+                lr=self.args.learning_rate,
+                weight_decay=self.args.weight_decay,
+            )
+            self.scheduler = None
+        elif self.args.optimizer == "adamw":
+            self.opt = torch.optim.AdamW(
                 filter(lambda x: x.requires_grad, self.model.parameters()),
                 lr=self.args.learning_rate,
                 weight_decay=self.args.weight_decay,
@@ -192,6 +211,7 @@ class Trainer:
                 self.criterion,
                 self.device,
                 self.scheduler,
+                loggers=loggers
             )
             val_metrics = self.validate(
                 self.model, valloader, self.criterion, self.device
@@ -233,7 +253,7 @@ def main(args):
     seed_everything(args.seed)
 
     dataset = data.get_dataset(args.dataset)(
-        os.path.join(args.dataset_dir, args.dataset), args.batch_size, args.num_workers
+        os.path.join(args.dataset_dir, args.dataset)
     )
 
     if args.model_in_channels == -1:
@@ -275,7 +295,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=0)
 
     # optimizer
-    parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd"])
+    parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
 
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-2)
