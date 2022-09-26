@@ -51,40 +51,34 @@ class Trainer:
             model.fc.reset_parameters()
 
         if get_arg(args, "reset_all_but_conv2d_3x3"):
-            for mname, module in model.named_modules():
+            for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
                 if type(module) is not torch.nn.Conv2d or module.kernel_size != (3, 3):
-                    logging.debug(f"Resetting {mname}")
+                    logging.info(f"Resetting {mname} {module}")
                     try:
                         module.reset_parameters()
                     except:
-                        logging.debug("... failed")
+                        logging.info("... failed")
 
         if get_arg(args, "freeze_layers"):
-            for mname, module in model.named_modules():
+            for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
                 if type(module).__name__ in args.freeze_layers.split(","):
                     for pname, param in module.named_parameters():
-                        logging.debug(f"Freezing {mname}/{pname}")
+                        logging.info(f"Freezing {mname}/{pname} {module}")
                         param.requires_grad = False
 
 
         if get_arg(args, "freeze_conv2d_3x3"):
-            for mname, module in model.named_modules():
+            for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
                 if type(module) is torch.nn.Conv2d and module.kernel_size == (3, 3):
                     for pname, param in module.named_parameters():
-                        logging.debug(f"Freezing {mname}/{pname}")
+                        logging.info(f"Freezing {mname}/{pname} {module}")
                         param.requires_grad = False
 
         model.to(args.device)
 
-        logging.debug("TRAINABLE PARAMETERS:")
-        logging.debug(
-            [
-                f"{name} {p.shape}"
-                for name, p in filter(
-                    lambda p: p[1].requires_grad, model.named_parameters()
-                )
-            ]
-        )
+        logging.info("TRAINABLE PARAMETERS:")
+        for name, p in filter(lambda p: p[1].requires_grad, model.named_parameters()):
+            logging.info(f" > {name} {p.shape}")
         logging.info(
             f"TOTAL: {sum(list(map(lambda p: p.numel(), filter(lambda p: p.requires_grad, model.parameters()))))}"
         )
@@ -229,7 +223,7 @@ def main(args):
 
     logging.basicConfig(level=logging.INFO)
     if get_arg(args, "verbose"):
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.info)
 
     output_dir = args.output_dir
     for k, v in vars(args).items():
