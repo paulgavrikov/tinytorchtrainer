@@ -9,6 +9,7 @@ import wandb
 import numpy as np
 import random
 import logging
+from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
 
 
 class CSVLogger:
@@ -120,5 +121,10 @@ def get_arg(args, key, fallback=None):
 
 
 def get_gpu_stats():
-    return [torch.cuda.memory_allocated(i) for i in range(torch.cuda.device_count())]
+    nvmlInit()
+    stats = []
+    for i in range(torch.cuda.device_count()):
+        handle = nvmlDeviceGetHandleByIndex(i)
+        info = nvmlDeviceGetMemoryInfo(handle)
+        stats.append(info.used)
 

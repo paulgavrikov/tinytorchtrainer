@@ -259,7 +259,10 @@ def main(args):
     )
 
     if args.device == "auto_gpu_by_memory":
-        vars(args)["device"] = f"cuda:{np.argmin(get_gpu_stats())}"
+        best_device = f"cuda:{np.argmin(get_gpu_stats())}"
+        logging.info(f"Autoselected device: {best_device}")
+        vars(args)["device"] = best_device
+
 
     if args.model_in_channels == -1:
         vars(args)["model_in_channels"] = dataset.in_channels
