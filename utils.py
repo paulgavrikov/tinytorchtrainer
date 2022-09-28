@@ -117,3 +117,8 @@ def get_arg(args, key, fallback=None):
     if key in vars(args):
         return vars(args)[key]
     return fallback
+
+
+def get_gpu_stats():
+    return [torch.cuda.get_device_properties(i).memory_allocated for i in range(torch.cuda.device_count())]
+

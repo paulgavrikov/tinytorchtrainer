@@ -6,6 +6,7 @@ import argparse
 import yaml
 import sys
 import logging
+import numpy as np
 from utils import (
     CSVLogger,
     ConsoleLogger,
@@ -16,6 +17,7 @@ from utils import (
     prepend_key_prefix,
     seed_everything,
     get_arg,
+    get_gpu_stats
 )
 
 
@@ -256,6 +258,9 @@ def main(args):
         os.path.join(args.dataset_dir, args.dataset)
     )
 
+    if args.device == "auto_gpu_by_memory":
+        vars(args)["device"] = "cuda:" + np.argmin(get_gpu_stats())
+
     if args.model_in_channels == -1:
         vars(args)["model_in_channels"] = dataset.in_channels
 
@@ -278,7 +283,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir", type=str, default="output/%dataset%/%model%/version_%seed%"
     )
-    parser.add_argument("--device", type=str, default="cuda:0")
+    parser.add_argument("--device", type=str, default="auto_gpu_by_memory")
     parser.add_argument(
         "--checkpoints", type=none2str, default=None, choices=["all", None]
     )
