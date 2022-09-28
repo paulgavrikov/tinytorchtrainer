@@ -127,4 +127,5 @@ def get_gpu_stats():
         handle = nvmlDeviceGetHandleByIndex(i)
         info = nvmlDeviceGetMemoryInfo(handle)
         stats.append(info.used)
+    return stats
 
