@@ -49,7 +49,8 @@ def main(args):
         vars(saved_args)[k] = v
     vars(saved_args)["load_checkpoint"] = args.load_checkpoint
     vars(saved_args)["verbose"] = False
-    dataset = data.get_dataset(saved_args.dataset)(os.path.join(saved_args.dataset_dir, saved_args.dataset), 1, 0)
+    vars(saved_args)["device"] = "cpu"
+    dataset = data.get_dataset(saved_args.dataset)(os.path.join(saved_args.dataset_dir, saved_args.dataset))
 
     vars(saved_args)["model_in_channels"] = dataset.in_channels
     vars(saved_args)["model_num_classes"] = dataset.num_classes
@@ -61,8 +62,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load_checkpoint", type=str, default=None)
-    parser.add_argument("--save_file", type=str, default="plot_convolutions.png")
+    parser.add_argument("load_checkpoint", type=str, default=None)
+    parser.add_argument("save_file", type=str, default="plot_convolutions.png")
     parser.add_argument("--show_labels", type=str2bool, default=True)
     _args = parser.parse_args()
     main(_args)
