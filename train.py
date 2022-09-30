@@ -1,3 +1,4 @@
+from pickle import FALSE
 import torch
 import models
 import data
@@ -137,6 +138,14 @@ class Trainer:
 
         return {"acc": correct / total, "loss": total_loss / total}
 
+    def warmup_bn(self, model, trainloader, device):
+        with torch.no_grad():
+            model.train()
+            for x, _ in trainloader:
+                x = x.to(device)
+                model(x)
+
+
     def fit(self, dataset, output_dir=None):
         trainloader = dataset.train_dataloader(self.args.batch_size, self.args.num_workers)
         valloader = dataset.val_dataloader(self.args.batch_size, self.args.num_workers)
@@ -192,6 +201,9 @@ class Trainer:
 
         self.epoch = 0
         self.steps = 0
+
+        if get_arg(self.args, "warmup_bn", False):
+            self.warmup_bn(self.model, trainloader)
 
         val_metrics = self.validate(self.model, valloader, self.criterion, self.device)
         for logger in loggers:
@@ -294,6 +306,8 @@ if __name__ == "__main__":
     parser.add_argument("--reset_head", type=str2bool, default=False)
     parser.add_argument("--reset_all_but_conv2d_3x3", type=str2bool, default=False)
     parser.add_argument("--freeze_conv2d_3x3", type=str2bool, default=False)
+
+    parser.add_argument("--warmup_bn", type=str2bool, default=False)
 
     parser.add_argument("--model_in_channels", type=int, default=-1)
     parser.add_argument("--model_num_classes", type=int, default=-1)
