@@ -1,3 +1,7 @@
 torch
 torchvision
+gitpython
+pyyaml
+wandb
+pynvml
 git+https://github.com/RobustBench/robustbench.git@v1.0#egg=robustbench
