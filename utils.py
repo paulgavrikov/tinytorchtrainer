@@ -29,8 +29,8 @@ class MockScaler:
     def scale(self, loss):
         return loss
 
-    def step(self, **kwargs):
-        pass
+    def step(self, optimizer, **kwargs):
+        optimizer.step()
 
     def update(self, **kwargs):
         pass

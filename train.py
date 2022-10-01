@@ -12,6 +12,8 @@ from utils import (
     ConsoleLogger,
     WandBLogger,
     CheckpointCallback,
+    MockScaler,
+    MockContextManager,
     none2str,
     str2bool,
     prepend_key_prefix,
@@ -119,8 +121,9 @@ class Trainer:
                 with self.context_cls():
                     y_pred = model(x)
                     loss = criterion(y_pred, y)
-                loss.backward()
-                opt.step()
+                scaler.scale(loss).backward()
+                scaler.step(opt)
+                scaler.update()
 
                 batch_loss = loss.item() * len(y)
                 batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
@@ -141,6 +144,9 @@ class Trainer:
         correct = 0
         total = 0
         total_loss = 0
+
+        scaler = self.scaler_cls()
+
         model.eval()
         with torch.no_grad():
             for x, y in valloader:
@@ -150,7 +156,8 @@ class Trainer:
                 with self.context_cls():
                     y_pred = model(x)
                     loss = criterion(y_pred, y)
-                total_loss += loss.item() * len(y)
+                total_loss += scaler.scale(loss).item() * len(y)
+                scaler.update()
 
                 correct += (y_pred.argmax(axis=1) == y).sum().item()
                 total += len(y)
