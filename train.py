@@ -7,6 +7,7 @@ import yaml
 import sys
 import logging
 import numpy as np
+from tqdm import tqdm
 from utils import (
     CSVLogger,
     ConsoleLogger,
@@ -106,7 +107,7 @@ class Trainer:
 
         model.train()
         with self.context_cls():
-            for x, y in trainloader:
+            for x, y in tqdm(trainloader, desc="Training", total=len(trainloader)):
                 x = x.to(device)
                 y = y.to(device)
 
@@ -149,7 +150,7 @@ class Trainer:
 
         model.eval()
         with torch.no_grad():
-            for x, y in valloader:
+            for x, y in tqdm(valloader, desc="Validating", total=len(valloader)):
                 x = x.to(device)
                 y = y.to(device)
 
@@ -167,7 +168,7 @@ class Trainer:
     def warmup_bn(self, model, trainloader, device):
         with torch.no_grad():
             model.train()
-            for x, _ in trainloader:
+            for x, _ in tqdm(trainloader, desc="Warm-Up", total=len(trainloader)):
                 x = x.to(device)
                 model(x)
 
