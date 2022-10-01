@@ -30,6 +30,13 @@ class Trainer:
         self.args = args
         self.loggers = []
 
+        self.scaler_cls = MockScaler
+        self.context_cls = MockContextManager
+
+        if get_arg(self.args, "use_amp", False):
+            self.scaler_cls = torch.cuda.amp.GradScaler
+            self.context_cls = torch.cuda.amp.autocast
+
     def prepare_model(args, in_channels, num_classes):
 
         logging.info(f"Initializing {args.model}")
@@ -92,36 +99,41 @@ class Trainer:
         correct = 0
         total = 0
         total_loss = 0
+
+        scaler = self.scaler_cls()
+
         model.train()
-        for x, y in trainloader:
-            x = x.to(device)
-            y = y.to(device)
+        with self.context_cls():
+            for x, y in trainloader:
+                x = x.to(device)
+                y = y.to(device)
 
-            opt_metrics = {}
-            for i, p_group in enumerate(opt.param_groups):
-                    for k, v in filter(lambda t: t[0] != "params", p_group.items()):
-                        opt_metrics[f"opt_{i}/{k}"] = v
+                opt_metrics = {}
+                for i, p_group in enumerate(opt.param_groups):
+                        for k, v in filter(lambda t: t[0] != "params", p_group.items()):
+                            opt_metrics[f"opt_{i}/{k}"] = v
 
-            self._log(opt_metrics, silent=True)
+                self._log(opt_metrics, silent=True)
 
-            opt.zero_grad()
-            y_pred = model(x)
-            loss = criterion(y_pred, y)
-            loss.backward()
-            opt.step()
+                opt.zero_grad()
+                with self.context_cls():
+                    y_pred = model(x)
+                    loss = criterion(y_pred, y)
+                loss.backward()
+                opt.step()
 
-            batch_loss = loss.item() * len(y)
-            batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
+                batch_loss = loss.item() * len(y)
+                batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
 
-            correct += batch_correct
-            total_loss += batch_loss
-            total += len(y)
-            self.steps += 1
+                correct += batch_correct
+                total_loss += batch_loss
+                total += len(y)
+                self.steps += 1
 
-            self._log({"train/batch_acc": correct / total, "train/batch_loss": total_loss / total}, silent=True)
+                self._log({"train/batch_acc": correct / total, "train/batch_loss": total_loss / total}, silent=True)
 
-        if scheduler:
-            scheduler.step()
+            if scheduler:
+                scheduler.step()
 
         return {"acc": correct / total, "loss": total_loss / total}
 
@@ -135,8 +147,9 @@ class Trainer:
                 x = x.to(device)
                 y = y.to(device)
 
-                y_pred = model(x)
-                loss = criterion(y_pred, y)
+                with self.context_cls():
+                    y_pred = model(x)
+                    loss = criterion(y_pred, y)
                 total_loss += loss.item() * len(y)
 
                 correct += (y_pred.argmax(axis=1) == y).sum().item()
@@ -325,6 +338,8 @@ if __name__ == "__main__":
 
     # optimizer
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
+
+    parser.add_argument("--use_amp", type=str2bool, default=False)
 
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-2)

@@ -12,6 +12,30 @@ import logging
 from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
 
 
+class MockContextManager:
+
+    def __init__(self, **kwargs) -> None:
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+
+class MockScaler:
+
+    def scale(self, loss):
+        return loss
+
+    def step(self, **kwargs):
+        pass
+
+    def update(self, **kwargs):
+        pass
+
+
 class CSVLogger:
     
     def __init__(self, log_file):
