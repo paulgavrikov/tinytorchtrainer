@@ -1,4 +1,3 @@
-from pickle import FALSE
 import torch
 import models
 import data
@@ -29,6 +28,7 @@ class Trainer:
         )
         self.device = args.device
         self.args = args
+        self.loggers = []
 
     def prepare_model(args, in_channels, num_classes):
 
@@ -87,7 +87,7 @@ class Trainer:
 
         return model
 
-    def train(self, model, trainloader, opt, criterion, device, scheduler=None, loggers=[]):
+    def train(self, model, trainloader, opt, criterion, device, scheduler=None):
 
         correct = 0
         total = 0
@@ -96,6 +96,13 @@ class Trainer:
         for x, y in trainloader:
             x = x.to(device)
             y = y.to(device)
+
+            opt_metrics = {}
+            for i, p_group in enumerate(opt.param_groups):
+                    for k, v in filter(lambda t: t[0] != "params", p_group.items()):
+                        opt_metrics[f"opt_{i}/{k}"] = v
+
+            self._log(opt_metrics, silent=True)
 
             opt.zero_grad()
             y_pred = model(x)
@@ -111,15 +118,14 @@ class Trainer:
             total += len(y)
             self.steps += 1
 
-            for logger in loggers:
-                logger.log(self.epoch, self.steps, {"train/batch_acc": correct / total, "train/batch_loss": total_loss / total}, silent=True)
+            self._log({"train/batch_acc": correct / total, "train/batch_loss": total_loss / total}, silent=True)
 
         if scheduler:
             scheduler.step()
 
         return {"acc": correct / total, "loss": total_loss / total}
 
-    def validate(self, model, valloader, criterion, device, loggers=[]):
+    def validate(self, model, valloader, criterion, device):
         correct = 0
         total = 0
         total_loss = 0
@@ -144,6 +150,10 @@ class Trainer:
             for x, _ in trainloader:
                 x = x.to(device)
                 model(x)
+
+    def _log(self, metrics_dict, **kwargs):
+        for logger in self.loggers:
+                logger.log(self.epoch, self.steps, metrics_dict, **kwargs)
 
 
     def fit(self, dataset, output_dir=None):
@@ -185,12 +195,12 @@ class Trainer:
 
         self.criterion = torch.nn.CrossEntropyLoss()
 
-        loggers = []
-        loggers.append(ConsoleLogger())
+        self.loggers = []
+        self.loggers.append(ConsoleLogger())
         if output_dir:
-            loggers.append(CSVLogger(os.path.join(output_dir, "metrics.csv")))
+            self.loggers.append(CSVLogger(os.path.join(output_dir, "metrics.csv")))
         if self.args.wandb_project:
-            loggers.append(WandBLogger(self.args.wandb_project, self.args))
+            self.loggers.append(WandBLogger(self.args.wandb_project, self.args))
 
         if output_dir:
             self.checkpoint = CheckpointCallback(
@@ -206,8 +216,7 @@ class Trainer:
             self.warmup_bn(self.model, trainloader)
 
         val_metrics = self.validate(self.model, valloader, self.criterion, self.device)
-        for logger in loggers:
-            logger.log(0, 0, prepend_key_prefix(val_metrics, "val/"))
+        self._log(prepend_key_prefix(val_metrics, "val/"))
         if output_dir:
             self.checkpoint.save(0, 0, self.model, {})
 
@@ -224,8 +233,7 @@ class Trainer:
                 self.opt,
                 self.criterion,
                 self.device,
-                self.scheduler,
-                loggers=loggers
+                self.scheduler
             )
             val_metrics = self.validate(
                 self.model, valloader, self.criterion, self.device
@@ -245,8 +253,7 @@ class Trainer:
                 metrics["val/acc_max"] = val_acc_max
                 metrics["best_epoch"] = best_epoch
 
-            for logger in loggers:
-                logger.log(epoch, self.steps, metrics)
+            self._log(metrics)
             if output_dir:
                 self.checkpoint.save(epoch, self.steps, self.model, metrics)
 
