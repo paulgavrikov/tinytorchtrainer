@@ -327,9 +327,11 @@ if __name__ == "__main__":
         "--output_dir", type=str, default="output/%dataset%/%model%/version_%seed%"
     )
     parser.add_argument("--device", type=str, default="auto_gpu_by_memory")
-    parser.add_argument(
-        "--checkpoints", type=none2str, default=None, choices=["all", None]
-    )
+    
+    parser.add_argument("--checkpoints", type=none2str, default=None, choices=["all", "best", "None", None])
+    parser.add_argument("--checkpoints_metric", type=str, default="val/acc")
+    parser.add_argument("--checkpoints_metric_target", type=str, default="max", choices=["max", "min"])
+
     parser.add_argument("--load_checkpoint", type=none2str, default=None)
     parser.add_argument("--reset_head", type=str2bool, default=False)
     parser.add_argument("--reset_all_but_conv2d_3x3", type=str2bool, default=False)
