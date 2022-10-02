@@ -72,11 +72,11 @@ class CheckpointCallback:
     
     def __init__(self, path, args=None):
         self.path = path 
-        self.mode = args.checkpoints
+        self.mode = args["checkpoints"]
         self.args = args
         self.last_best = 0
-        self.target_metric = args.checkpoints_metric
-        self.target_metric_target = args.checkpoints_metric_target
+        self.target_metric = get_arg(args, "checkpoints_metric", "val/acc")
+        self.target_metric_target = get_arg(args, "checkpoints_metric_target", "max")
         os.makedirs(self.path, exist_ok=True)
 
     def save(self, epoch, step, model, metrics):
