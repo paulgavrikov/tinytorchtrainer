@@ -226,7 +226,7 @@ class Trainer:
         if output_dir:
             self.checkpoint = CheckpointCallback(
                 os.path.join(output_dir, "checkpoints"),
-                args=vars(self.args),
+                args=self.args,
             )
 
         self.epoch = 0

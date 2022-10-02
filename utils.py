@@ -72,7 +72,7 @@ class CheckpointCallback:
     
     def __init__(self, path, args=None):
         self.path = path 
-        self.mode = args["checkpoints"]
+        self.mode = args.checkpoints
         self.args = args
         self.last_best = 0
         self.target_metric = get_arg(args, "checkpoints_metric", "val/acc")
@@ -87,10 +87,10 @@ class CheckpointCallback:
                 {
                     "state_dict": model.state_dict(), 
                     "metrics": {"epoch": epoch, "step": step, **metrics}, 
-                    "args": self.args
+                    "args": vars(self.args)
                 }, out_path)
-        elif (metrics[self.target_metric] > self.last_best and self.target_metric_target == "max") or \
-                (metrics[self.target_metric] < self.last_best and self.target_metric_target == "min"):
+        elif self.mode == "best" and (self.target_metric in metrics) and ((metrics[self.target_metric] > self.last_best and self.target_metric_target == "max") or \
+                (metrics[self.target_metric] < self.last_best and self.target_metric_target == "min")):
             self.last_best = metrics[self.target_metric]
             out_path = os.path.join(self.path, os.path.join(os.path.split(self.CKPT_PATTERN)[0], "best.ckpt"))
             logging.debug(f"saving {out_path}")
@@ -98,7 +98,7 @@ class CheckpointCallback:
                 {
                     "state_dict": model.state_dict(), 
                     "metrics": {"epoch": epoch, "step": step, **metrics}, 
-                    "args": self.args
+                    "args": vars(self.args)
                 }, out_path)
 
 
