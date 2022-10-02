@@ -9,7 +9,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.data import Dataset
 from torchvision import transforms
-from torchvision.datasets import CIFAR10, CIFAR100, MNIST, KMNIST, FashionMNIST, ImageFolder, SVHN
+from torchvision.datasets import CIFAR10, CIFAR100, MNIST, KMNIST, FashionMNIST, ImageFolder, SVHN, OxfordIIITPet, Flowers102
 try:
     from torchvision.datasets import SUN397
 except:
@@ -778,6 +778,108 @@ class CIFAR10Corruptions(Dataset):
         return sample, self.labels[idx]
 
 
+class Flowers102Data():
+    def __init__(self, root_dir):
+        super().__init__()
+        self.root_dir = root_dir
+        self.mean = (0.4330, 0.3819, 0.2964)
+        self.std = (0.2736, 0.2240, 0.2525)
+        self.num_classes = 102
+        self.in_channels = 3
+        self.train_transform = transforms.Compose(
+            [
+                transforms.RandomCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((224,224)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = Flowers102(root=self.root_dir, split="train", transform=self.train_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
+
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = Flowers102(root=self.root_dir, split="val", transform=self.val_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
+
+
+class OxfordIIITPetData():
+    def __init__(self, root_dir):
+        super().__init__()
+        self.root_dir = root_dir
+        self.mean = (0.4783, 0.4459, 0.3957)
+        self.std = (0.2627, 0.2572, 0.2653)
+        self.num_classes = 37
+        self.in_channels = 3
+        self.train_transform = transforms.Compose(
+            [
+                transforms.RandomCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize((224,224)),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = OxfordIIITPet(root=self.root_dir, split="trainval", transform=self.train_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
+
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = OxfordIIITPet(root=self.root_dir, split="test", transform=self.val_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
+
+
 all_datasets = {
     "cifar10": CIFAR10Data,
     "cifar100": CIFAR100Data,
@@ -789,7 +891,9 @@ all_datasets = {
     "svhn": SVHNData,
     "tinyimagenet": TinyImageNetData,
     "grocerystore": GroceryStoreData,
-    "sun397": SUN397Data
+    "sun397": SUN397Data,
+    "flowers102": Flowers102Data,
+    "oxfordiiitpet": OxfordIIITPetData,
 }
 
 
