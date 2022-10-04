@@ -12,6 +12,9 @@ from .lowresresnet9 import lowres_resnet9
 from .lowresalexnet import lowres_alexnet
 from .lowreslenet import lowres_lenet5
 
+import torchvision.models
+from functools import partial
+
 all_classifiers = {
     "lowres_vgg11_bn": lowres_vgg11_bn,
     "lowres_vgg13_bn": lowres_vgg13_bn,
@@ -50,6 +53,13 @@ all_classifiers = {
     "lowres_lenet5": lowres_lenet5
 }
 
+def torchvision_loader(name, in_channels, num_classes):
+    assert in_channels == 3
+    return torchvision.models.__dict__[name](num_classes=num_classes, pretrained=False)
+
 
 def get_model(name):
-    return all_classifiers.get(name)
+    if name.startswith("lowres_"):
+        return all_classifiers.get(name)
+    elif name.startswith("torchvision_"):
+        return partial(torchvision_loader, name=name.replace("torchvision_", ""))

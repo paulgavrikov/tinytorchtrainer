@@ -70,14 +70,13 @@ class CheckpointCallback:
     
     CKPT_PATTERN = "epoch=%d-step=%d.ckpt"
     
-    def __init__(self, path, mode="all", args=None):
-        
-        assert mode in ["all", None]
-        
+    def __init__(self, path, args=None):
         self.path = path 
-        self.mode = mode
+        self.mode = args.checkpoints
         self.args = args
-        
+        self.last_best = 0
+        self.target_metric = get_arg(args, "checkpoints_metric", "val/acc")
+        self.target_metric_target = get_arg(args, "checkpoints_metric_target", "max")
         os.makedirs(self.path, exist_ok=True)
 
     def save(self, epoch, step, model, metrics):
@@ -88,7 +87,18 @@ class CheckpointCallback:
                 {
                     "state_dict": model.state_dict(), 
                     "metrics": {"epoch": epoch, "step": step, **metrics}, 
-                    "args": self.args
+                    "args": vars(self.args)
+                }, out_path)
+        elif self.mode == "best" and (self.target_metric in metrics) and ((metrics[self.target_metric] > self.last_best and self.target_metric_target == "max") or \
+                (metrics[self.target_metric] < self.last_best and self.target_metric_target == "min")):
+            self.last_best = metrics[self.target_metric]
+            out_path = os.path.join(self.path, os.path.join(os.path.split(self.CKPT_PATTERN)[0], "best.ckpt"))
+            logging.debug(f"saving {out_path}")
+            torch.save(
+                {
+                    "state_dict": model.state_dict(), 
+                    "metrics": {"epoch": epoch, "step": step, **metrics}, 
+                    "args": vars(self.args)
                 }, out_path)
 
 
