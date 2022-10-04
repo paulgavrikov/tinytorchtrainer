@@ -178,6 +178,8 @@ class Trainer:
 
 
     def fit(self, dataset, output_dir=None):
+        torch.backends.cudnn.benchmark = get_arg(self.args, "cudnn_benchmark", False)
+
         trainloader = dataset.train_dataloader(self.args.batch_size, self.args.num_workers)
         valloader = dataset.val_dataloader(self.args.batch_size, self.args.num_workers)
 
@@ -327,6 +329,7 @@ if __name__ == "__main__":
         "--output_dir", type=str, default="output/%dataset%/%model%/version_%seed%"
     )
     parser.add_argument("--device", type=str, default="auto_gpu_by_memory")
+    parser.add_argument("--cudnn_benchmark", type=str2bool, default=True)
     parser.add_argument(
         "--checkpoints", type=none2str, default=None, choices=["all", None]
     )
