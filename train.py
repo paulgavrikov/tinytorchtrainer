@@ -13,8 +13,6 @@ from utils import (
     ConsoleLogger,
     WandBLogger,
     CheckpointCallback,
-    MockScaler,
-    MockContextManager,
     none2str,
     str2bool,
     prepend_key_prefix,
@@ -32,13 +30,6 @@ class Trainer:
         self.device = args.device
         self.args = args
         self.loggers = []
-
-        self.scaler_cls = MockScaler
-        self.context_cls = MockContextManager
-
-        if get_arg(self.args, "use_amp", False):
-            self.scaler_cls = torch.cuda.amp.GradScaler
-            self.context_cls = torch.cuda.amp.autocast
 
     def prepare_model(args, in_channels, num_classes):
 
@@ -103,41 +94,27 @@ class Trainer:
         total = 0
         total_loss = 0
 
-        scaler = self.scaler_cls()
-
         model.train()
-        with self.context_cls():
-            for x, y in tqdm(trainloader, desc="Training", total=len(trainloader)):
-                x = x.to(device)
-                y = y.to(device)
+        for x, y in tqdm(trainloader, desc="Training", total=len(trainloader)):
+            x = x.to(device)
+            y = y.to(device)
 
-                opt_metrics = {}
-                for i, p_group in enumerate(opt.param_groups):
-                        for k, v in filter(lambda t: t[0] != "params", p_group.items()):
-                            opt_metrics[f"opt_{i}/{k}"] = v
+            opt.zero_grad()
+            y_pred = model(x)
+            loss = criterion(y_pred, y)
+            loss.backward()
+            opt.step()
 
-                self._log(opt_metrics, silent=True)
+            batch_loss = loss.item() * len(y)
+            batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
 
-                opt.zero_grad()
-                with self.context_cls():
-                    y_pred = model(x)
-                    loss = criterion(y_pred, y)
-                scaler.scale(loss).backward()
-                scaler.step(opt)
-                scaler.update()
+            correct += batch_correct
+            total_loss += batch_loss
+            total += len(y)
+            self.steps += 1
 
-                batch_loss = loss.item() * len(y)
-                batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
-
-                correct += batch_correct
-                total_loss += batch_loss
-                total += len(y)
-                self.steps += 1
-
-                self._log({"train/batch_acc": correct / total, "train/batch_loss": total_loss / total}, silent=True)
-
-            if scheduler:
-                scheduler.step()
+        if scheduler:
+            scheduler.step()
 
         return {"acc": correct / total, "loss": total_loss / total}
 
@@ -146,19 +123,15 @@ class Trainer:
         total = 0
         total_loss = 0
 
-        scaler = self.scaler_cls()
-
         model.eval()
         with torch.no_grad():
             for x, y in tqdm(valloader, desc="Validating", total=len(valloader)):
                 x = x.to(device)
                 y = y.to(device)
 
-                with self.context_cls():
-                    y_pred = model(x)
-                    loss = criterion(y_pred, y)
-                total_loss += scaler.scale(loss).item() * len(y)
-                scaler.update()
+                y_pred = model(x)
+                loss = criterion(y_pred, y)
+                total_loss += loss.item() * len(y)
 
                 correct += (y_pred.argmax(axis=1) == y).sum().item()
                 total += len(y)
@@ -235,7 +208,7 @@ class Trainer:
         self.steps = 0
 
         if get_arg(self.args, "warmup_bn", False):
-            self.warmup_bn(self.model, trainloader)
+            self.warmup_bn(self.model, trainloader, self.device)
 
         val_metrics = self.validate(self.model, valloader, self.criterion, self.device)
         self._log(prepend_key_prefix(val_metrics, "val/"))
