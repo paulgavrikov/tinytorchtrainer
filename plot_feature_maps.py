@@ -6,16 +6,13 @@ import os
 import data
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.axes_grid1 import ImageGrid
 import numpy as np
-from utils import str2bool
 from PIL import Image
+from utils import LayerHook
 
 
 def _hide_border(ax):
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["top"].set_visible(False) 
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.imshow(np.zeros((1, 1, 3)))
@@ -58,9 +55,44 @@ def main(args):
 
     trainer = Trainer(saved_args)
 
-    img = Image.read(args.sample)
-    x = dataset.val_transform(img)
-    trainer.model(x)
+    img = Image.open(args.sample)
+    x = dataset.val_transform(img).unsqueeze(0)
+
+    trainer.model.eval()
+
+    hooks = []
+    for layer_name in args.layers.split(","):
+        hook = LayerHook()
+        hook.register_hook(getattr(trainer.model, layer_name), False)
+        hooks.append((layer_name, hook))
+
+    with torch.no_grad():
+        y_pred = trainer.model(x)
+        pred = torch.nn.Sigmoid()(y_pred)
+        print("Predicted label", pred.argmax(1).item(), "with confidence", pred.max().item())
+
+    for layer_name, hook in hooks:
+        feature_maps = hook.pull()
+
+        t = abs(feature_maps).max()
+
+        print(f"Layer {layer_name} has {feature_maps.shape[0]} feature maps")
+
+        N = int(np.log2(feature_maps.shape[0]))
+
+        fig = plt.figure(figsize=(N, N))
+        grid = ImageGrid(fig, 111,
+                 nrows_ncols=(N, N),
+                 axes_pad=0.1,
+                )
+
+        for ax, im in zip(grid, feature_maps):
+            # Iterating over the grid returns the Axes.
+            _hide_border(ax)
+            ax.imshow(im, vmin=-t, vmax=t, cmap="seismic")
+        os.makedirs("out/feature_maps", exist_ok=True)
+        fig.savefig(f"out/feature_maps/{layer_name}.png", bbox_inches="tight")
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
