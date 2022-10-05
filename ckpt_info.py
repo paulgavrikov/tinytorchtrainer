@@ -9,6 +9,8 @@ def main(args):
     pprint(ckpt["metrics"])
     print("ARGS:")
     pprint(ckpt["args"])
+    print("TENSORS:")
+    pprint([f"{k} ({v.shape})" for k, v in ckpt["state_dict"].items()])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
