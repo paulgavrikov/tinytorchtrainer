@@ -10,6 +10,7 @@ import numpy as np
 import random
 import logging
 from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
+import torch.nn.functional as F
 
 
 class MockContextManager:
@@ -162,6 +163,44 @@ def get_gpu_stats():
         info = nvmlDeviceGetMemoryInfo(handle)
         stats.append(info.used)
     return stats
+
+
+def rand_bbox(size, lam):
+    W = size[2]
+    H = size[3]
+    cut_rat = np.sqrt(1. - lam)
+    cut_w = int(W * cut_rat)
+    cut_h = int(H * cut_rat)
+
+    # uniform
+    cx = np.random.randint(W)
+    cy = np.random.randint(H)
+
+    bbx1 = np.clip(cx - cut_w // 2, 0, W)
+    bby1 = np.clip(cy - cut_h // 2, 0, H)
+    bbx2 = np.clip(cx + cut_w // 2, 0, W)
+    bby2 = np.clip(cy + cut_h // 2, 0, H)
+
+    return bbx1, bby1, bbx2, bby2
+
+
+def cutmix_batch(batch_x, batch_y, beta):
+    lam = np.random.beta(beta, beta)
+    rand_index = torch.randperm(batch_x.size()[0]).to(batch_x.device)
+    target_a = batch_y
+    target_b = batch_y[rand_index]
+    bbx1, bby1, bbx2, bby2 = rand_bbox(batch_x.size(), lam)
+    batch_x[:, :, bbx1:bbx2, bby1:bby2] = batch_x[rand_index, :, bbx1:bbx2, bby1:bby2]
+    # adjust lambda to exactly match pixel ratio
+    lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (batch_x.size()[-1] * batch_x.size()[-2]))
+    
+    return batch_x, batch_y, target_a, target_b, lam
+
+
+def cutmix_loss(y_pred, target_a, target_b, lam, loss_fn=F.cross_entropy):
+    loss = loss_fn(y_pred, target_a) * lam + loss_fn(y_pred, target_b) * (
+                        1. - lam)
+    return loss
 
 
 class LayerHook:
