@@ -18,7 +18,9 @@ from utils import (
     prepend_key_prefix,
     seed_everything,
     get_arg,
-    get_gpu_stats
+    get_gpu_stats,
+    cutmix_batch,
+    cutmix_loss
 )
 
 
@@ -99,9 +101,18 @@ class Trainer:
             x = x.to(device)
             y = y.to(device)
 
+            r_cutmix = np.random.rand(1)
+            use_cutmix = False
+            if r_cutmix < get_arg(self.args, "cutmix_prob", 0):
+                use_cutmix = True
+                x, y, target_a, target_b, lam = cutmix_batch(x, y, self.args.cutmix_beta)
+
             opt.zero_grad()
             y_pred = model(x)
-            loss = criterion(y_pred, y)
+            if not use_cutmix:
+                loss = criterion(y_pred, y)
+            else:
+                loss = cutmix_loss(y_pred, target_a, target_b, lam)
             loss.backward()
             opt.step()
 
@@ -322,6 +333,8 @@ if __name__ == "__main__":
 
     # optimizer
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
+    parser.add_argument("--cutmix_prob", type=float, default=0)
+    parser.add_argument("--cutmix_beta", type=float, default=1)
 
     parser.add_argument("--use_amp", type=str2bool, default=False)
 
