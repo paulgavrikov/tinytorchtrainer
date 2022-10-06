@@ -201,3 +201,27 @@ def cutmix_loss(y_pred, target_a, target_b, lam, loss_fn=F.cross_entropy):
     loss = loss_fn(y_pred, target_a) * lam + loss_fn(y_pred, target_b) * (
                         1. - lam)
     return loss
+
+
+class LayerHook:
+
+    def __init__(self):
+        self.storage = None
+        self.hook_handle = None
+
+    def pull(self):
+        if self.hook_handle is not None:
+            self.hook_handle.remove()
+        return self.storage
+
+    def register_hook(self, module, store_input=True):
+        if self.hook_handle is not None:
+            self.hook_handle.remove()
+        self.storage = None
+
+        def hook(_, inp, out):
+            if store_input:
+                self.storage = inp.detach().cpu()
+            else:
+                self.storage = out[0].detach().cpu()
+        self.hook_handle = module.register_forward_hook(hook)
