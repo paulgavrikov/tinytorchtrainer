@@ -10,7 +10,7 @@ import numpy as np
 import random
 import logging
 from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
-import torch.functional as F
+import torch.nn.functional as F
 
 
 class MockContextManager:
