@@ -495,14 +495,17 @@ def lowres_preact_resnet34(**kwargs):
 
 def lowres_resnet14_dw(**kwargs):
     """Constructs a DepthWise ResNet-14 model."""
+    kwargs["groups"] = -1
     return _resnet(DepthwiseBasicBlock, [2, 2, 2], **kwargs)
 
 
 def lowres_resnet18_dw(**kwargs):
     """Constructs a DepthWise ResNet-18 model."""
+    kwargs["groups"] = -1
     return _resnet(DepthwiseBasicBlock, [2, 2, 2, 2], **kwargs)
 
 
 def lowres_resnet34_dw(**kwargs):
     """Constructs a DepthWise ResNet-34 model."""
+    kwargs["groups"] = -1
     return _resnet(DepthwiseBasicBlock, [3, 4, 6, 3], **kwargs)
