@@ -93,6 +93,62 @@ class BasicBlock(nn.Module):
         return out
 
 
+class DepthwiseBasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        activation_fn,
+        stride=1,
+        downsample=None,
+        groups=1,
+        base_width=64,
+        dilation=1,
+        norm_layer=None,
+        skip_residual=False
+    ):
+        super(BasicBlock, self).__init__()
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
+        if groups != -1 or base_width != 64:
+            raise ValueError("DepthwiseBasicBlock only supports groups=-1 and base_width=64")
+        if dilation > 1:
+            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
+        # Both self.conv1 and self.downsample layers downsample the input when stride != 1
+        self.dwconv1 = conv3x3(inplanes, inplanes, stried=stride, groups=inplanes)
+        self.bn1 = norm_layer(planes)
+        self.pwconv1 = conv1x1(inplanes, planes, stride=stride)
+        self.relu = activation_fn(inplace=True)
+        self.dwconv2 = conv3x3(planes, planes, groups=planes)
+        self.bn2 = norm_layer(planes)
+        self.pwconv1 = conv1x1(planes, planes, stride=stride)
+        self.downsample = downsample
+        self.stride = stride
+        self.skip_residual = skip_residual
+
+    def forward(self, x):
+        identity = x
+
+        out = self.dwconv1(x)
+        out = self.bn1(out)
+        out = self.pwconv1(out)
+        out = self.relu(out)
+
+        out = self.dwconv2(out)
+        out = self.bn2(out)
+        out = self.pwconv2(out)
+
+        if not self.skip_residual:
+            if self.downsample is not None:
+                identity = self.downsample(x)
+
+            out += identity
+        out = self.relu(out)
+
+        return out
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -419,9 +475,7 @@ def lowres_wide_resnet101_2(**kwargs):
     kwargs["width_per_group"] = 64 * 2
     return _resnet(Bottleneck, [3, 4, 23, 3], **kwargs)
 
-
 # Pre-Act
-
 
 def lowres_preact_resnet14(**kwargs):
     """Constructs a Pre-Act ResNet-14 model."""
@@ -437,3 +491,18 @@ def lowres_preact_resnet34(**kwargs):
     """Constructs a Pre-Act ResNet-34 model."""
     return _resnet(PreactBasicBlock, [3, 4, 6, 3], **kwargs)
 
+# DepthWise
+
+def lowres_resnet14_dw(**kwargs):
+    """Constructs a DepthWise ResNet-14 model."""
+    return _resnet(DepthwiseBasicBlock, [2, 2, 2], **kwargs)
+
+
+def lowres_resnet18_dw(**kwargs):
+    """Constructs a DepthWise ResNet-18 model."""
+    return _resnet(DepthwiseBasicBlock, [2, 2, 2, 2], **kwargs)
+
+
+def lowres_resnet34_dw(**kwargs):
+    """Constructs a DepthWise ResNet-34 model."""
+    return _resnet(DepthwiseBasicBlock, [3, 4, 6, 3], **kwargs)
