@@ -132,3 +132,7 @@ dmypy.json
 
 # Outputs
 output/
+
+# Models
+*.ckpt
+*.onnx
