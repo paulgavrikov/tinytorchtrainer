@@ -4,4 +4,5 @@ gitpython
 pyyaml
 wandb
 pynvml
+timm
 git+https://github.com/RobustBench/robustbench.git@v1.0#egg=robustbench
