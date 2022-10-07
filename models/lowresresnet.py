@@ -109,7 +109,7 @@ class DepthwiseBasicBlock(nn.Module):
         norm_layer=None,
         skip_residual=False
     ):
-        super(BasicBlock, self).__init__()
+        super(DepthwiseBasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if groups != -1 or base_width != 64:
