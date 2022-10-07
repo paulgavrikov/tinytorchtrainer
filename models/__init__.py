@@ -68,7 +68,7 @@ def torchvision_loader(name, in_channels, num_classes):
 
 
 def get_model(name):
-    if name.startswith("lowres_"):
+    if name.startswith("lowres_") or name.startswith("convnext_"):
         return all_classifiers.get(name)
     elif name.startswith("torchvision_"):
         return partial(torchvision_loader, name=name.replace("torchvision_", ""))
