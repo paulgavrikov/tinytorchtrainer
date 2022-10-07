@@ -11,6 +11,7 @@ from .lowresvgg import lowres_vgg11_bn, lowres_vgg13_bn, lowres_vgg16_bn, lowres
 from .lowresresnet9 import lowres_resnet9
 from .lowresalexnet import lowres_alexnet
 from .lowreslenet import lowres_lenet5
+from .convnext import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
 
 import torchvision.models
 from functools import partial
@@ -53,7 +54,12 @@ all_classifiers = {
     "lowres_googlenet": lowres_googlenet,
     "lowres_inception_v3": lowres_inception_v3,
     "lowres_alexnet": lowres_alexnet,
-    "lowres_lenet5": lowres_lenet5
+    "lowres_lenet5": lowres_lenet5,
+    "convnext_tiny": convnext_tiny, 
+    "convnext_small": convnext_small, 
+    "convnext_base": convnext_base, 
+    "convnext_large": convnext_large, 
+    "convnext_xlarge": convnext_xlarge
 }
 
 def torchvision_loader(name, in_channels, num_classes):
