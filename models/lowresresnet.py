@@ -103,7 +103,7 @@ class DepthwiseBasicBlock(nn.Module):
         activation_fn,
         stride=1,
         downsample=None,
-        groups=1,
+        groups=-1,
         base_width=64,
         dilation=1,
         norm_layer=None,
