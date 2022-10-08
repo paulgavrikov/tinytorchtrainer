@@ -118,7 +118,7 @@ class DepthwiseBasicBlock(nn.Module):
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.dwconv1 = conv3x3(inplanes, inplanes, stride=stride, groups=inplanes)
-        self.bn1 = norm_layer(planes)
+        self.bn1 = norm_layer(inplanes)
         self.pwconv1 = conv1x1(inplanes, planes)
         self.relu = activation_fn(inplace=True)
         self.dwconv2 = conv3x3(planes, planes, groups=planes)
