@@ -29,13 +29,17 @@ def main(args):
     x = torch.randn(1, 3, 32, 32, requires_grad=True)
     torch_out = trainer.model(x)
 
+    trainer.model.train()
+
+
     # Export the model
     torch.onnx.export(trainer.model,               # model being run
                     x,                         # model input (or a tuple for multiple inputs)
                     args.output,   # where to save the model (can be a file or file-like object)
                     export_params=True,        # store the trained parameter weights inside the model file
                     opset_version=13,          # the ONNX version to export the model to
-                    do_constant_folding=True,  # whether to execute constant folding for optimization
+                    do_constant_folding=False,  # whether to execute constant folding for optimization
+                    training=torch.onnx.TrainingMode.TRAINING, 
                     input_names = ['input'],   # the model's input names
                     output_names = ['output'], # the model's output names
                     dynamic_axes={'input' : {0 : 'batch_size'},    # variable length axes
