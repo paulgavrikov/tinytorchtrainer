@@ -124,6 +124,7 @@ class DepthwiseBasicBlock(nn.Module):
         self.dwconv2 = conv3x3(planes, planes, groups=planes)
         self.bn2 = norm_layer(planes)
         self.pwconv2 = conv1x1(planes, planes)
+        self.bn3 = norm_layer(planes)
         self.downsample = downsample
         self.stride = stride
         self.skip_residual = skip_residual
@@ -139,6 +140,7 @@ class DepthwiseBasicBlock(nn.Module):
         out = self.dwconv2(out)
         out = self.bn2(out)
         out = self.pwconv2(out)
+        out = self.bn3(out)
 
         if not self.skip_residual:
             if self.downsample is not None:
