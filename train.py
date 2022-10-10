@@ -176,7 +176,7 @@ class Trainer:
                 weight_decay=self.args.weight_decay,
             )
             self.scheduler = torch.optim.lr_scheduler.StepLR(
-                self.opt, step_size=30, gamma=0.1
+                self.opt, step_size=get_arg(self.args, "scheduler_step", 30), gamma=0.1
             )
         elif self.args.optimizer == "adam":
             self.opt = torch.optim.Adam(
@@ -333,6 +333,10 @@ if __name__ == "__main__":
 
     # optimizer
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
+
+    # scheduler
+    parser.add_argument("--scheduler_step", type=int, default=30)
+
     parser.add_argument("--cutmix_prob", type=float, default=0)
     parser.add_argument("--cutmix_beta", type=float, default=1)
 
