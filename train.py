@@ -8,6 +8,7 @@ import sys
 import logging
 import numpy as np
 from tqdm import tqdm
+from datetime import datetime
 from utils import (
     CSVLogger,
     ConsoleLogger,
@@ -276,6 +277,9 @@ def main(args):
     for k, v in vars(args).items():
         if f"%{k}%" in output_dir:
             output_dir = output_dir.replace(f"%{k}%", v if type(v) == str else str(v))
+
+    str_date_time = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    output_dir = output_dir.replace("%timestamp%", str_date_time)
 
     seed_everything(args.seed)
 
