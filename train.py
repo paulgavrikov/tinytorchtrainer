@@ -357,6 +357,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", type=str2bool, default=False)
 
     parser.add_argument("--wandb_project", type=none2str, default=None)
+    parser.add_argument("--wandb_notes", type=none2str, default=None)
     parser.add_argument("--wandb_extra_1", type=none2str, default=None)
     parser.add_argument("--wandb_extra_2", type=none2str, default=None)
     parser.add_argument("--wandb_extra_3", type=none2str, default=None)
