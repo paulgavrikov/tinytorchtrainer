@@ -8,21 +8,14 @@ def main(args):
     api = wandb.Api()
     runs = api.runs(args.wandb_project)
 
-    for run in tqdm(filter(lambda r: r.state == "finished", runs)):
+    for run in tqdm(filter(lambda r: r.state == "finished" and r.config["model"] == "lowres_mobilenet_v2", runs)):
         config = run.config
         output_dir = config["output_dir"]
-        for k, v in config.items():
+            
+        for k, v in (run.config).items():
             if f"%{k}%" in output_dir:
                 output_dir = output_dir.replace(f"%{k}%", v if type(v) == str else str(v))
-
-        df = run.history()
-        best_row = df.iloc[df["val/acc"].argmax()]
-
-        checkpoint_dir = os.path.join(output_dir, f"checkpoints/epoch={int(best_row.epoch)}-step={int(best_row.step)}.ckpt")
-        checkpoint_best_dir = os.path.join(output_dir, f"checkpoints/best.ckpt")
-
-        os.system(f"cp {checkpoint_dir} {checkpoint_best_dir}")
- 
+        checkpoint_best_dir = os.path.join(output_dir, f"checkpoints/best.ckpt") 
         wandb.init(project=args.wandb_project, id=run.id, resume="must", reinit=True)
         wandb.save(checkpoint_best_dir) 
 
