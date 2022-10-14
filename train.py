@@ -8,6 +8,7 @@ import sys
 import logging
 import numpy as np
 from tqdm import tqdm
+from datetime import datetime
 from utils import (
     CSVLogger,
     ConsoleLogger,
@@ -176,7 +177,7 @@ class Trainer:
                 weight_decay=self.args.weight_decay,
             )
             self.scheduler = torch.optim.lr_scheduler.StepLR(
-                self.opt, step_size=30, gamma=0.1
+                self.opt, step_size=get_arg(self.args, "scheduler_step", 30), gamma=0.1
             )
         elif self.args.optimizer == "adam":
             self.opt = torch.optim.Adam(
@@ -277,6 +278,9 @@ def main(args):
         if f"%{k}%" in output_dir:
             output_dir = output_dir.replace(f"%{k}%", v if type(v) == str else str(v))
 
+    str_date_time = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    output_dir = output_dir.replace("%timestamp%", str_date_time)
+
     seed_everything(args.seed)
 
     dataset = data.get_dataset(args.dataset)(
@@ -333,6 +337,10 @@ if __name__ == "__main__":
 
     # optimizer
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
+
+    # scheduler
+    parser.add_argument("--scheduler_step", type=int, default=30)
+
     parser.add_argument("--cutmix_prob", type=float, default=0)
     parser.add_argument("--cutmix_beta", type=float, default=1)
 
@@ -349,6 +357,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", type=str2bool, default=False)
 
     parser.add_argument("--wandb_project", type=none2str, default=None)
+    parser.add_argument("--wandb_notes", type=none2str, default=None)
     parser.add_argument("--wandb_extra_1", type=none2str, default=None)
     parser.add_argument("--wandb_extra_2", type=none2str, default=None)
     parser.add_argument("--wandb_extra_3", type=none2str, default=None)

@@ -60,7 +60,7 @@ class ConsoleLogger:
 class WandBLogger:
     
     def __init__(self, project, args):
-        wandb.init(config=args, project=project)
+        wandb.init(config=args, project=project, notes=get_arg(args, "wandb_notes", None))
 
     def log(self, epoch, step, row, silent=False):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}

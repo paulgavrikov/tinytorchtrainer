@@ -13,3 +13,4 @@ Scripts:
 - `plot_feature_maps.py`: Plots the feature maps of selected layers of a given checkpoints for a given input sample
 - `init_data.py`: Prepares the data independent of training (usefull before sweeps)
 - `ckpt_info.py`: Dumps info stored in a checkpoint
+- `to_onnx.py`: Exports checkpoints to ONNX

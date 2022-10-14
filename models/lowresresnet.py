@@ -93,6 +93,64 @@ class BasicBlock(nn.Module):
         return out
 
 
+class DepthwiseBasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        activation_fn,
+        stride=1,
+        downsample=None,
+        groups=-1,
+        base_width=64,
+        dilation=1,
+        norm_layer=None,
+        skip_residual=False
+    ):
+        super(DepthwiseBasicBlock, self).__init__()
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
+        if groups != -1 or base_width != 64:
+            raise ValueError("DepthwiseBasicBlock only supports groups=-1 and base_width=64")
+        if dilation > 1:
+            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
+        # Both self.conv1 and self.downsample layers downsample the input when stride != 1
+        self.dwconv1 = conv3x3(inplanes, inplanes, stride=stride, groups=inplanes)
+        self.bn1 = norm_layer(inplanes)
+        self.pwconv1 = conv1x1(inplanes, planes)
+        self.relu = activation_fn(inplace=True)
+        self.dwconv2 = conv3x3(planes, planes, groups=planes)
+        self.bn2 = norm_layer(planes)
+        self.pwconv2 = conv1x1(planes, planes)
+        self.bn3 = norm_layer(planes)
+        self.downsample = downsample
+        self.stride = stride
+        self.skip_residual = skip_residual
+
+    def forward(self, x):
+        identity = x
+
+        out = self.dwconv1(x)
+        out = self.bn1(out)
+        out = self.pwconv1(out)
+        out = self.relu(out)
+
+        out = self.dwconv2(out)
+        out = self.bn2(out)
+        out = self.pwconv2(out)
+        out = self.bn3(out)
+
+        if not self.skip_residual:
+            if self.downsample is not None:
+                identity = self.downsample(x)
+
+            out += identity
+        out = self.relu(out)
+
+        return out
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -112,7 +170,11 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        width = int(planes * (base_width / 64.0)) * groups
+        if groups != -1:
+            width = int(planes * (base_width / 64.0)) * groups
+        else:
+            width = int(planes * (base_width / 64.0)) 
+            groups = width
         # Both self.conv2 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv1x1(inplanes, width)
         self.bn1 = norm_layer(width)
@@ -419,9 +481,7 @@ def lowres_wide_resnet101_2(**kwargs):
     kwargs["width_per_group"] = 64 * 2
     return _resnet(Bottleneck, [3, 4, 23, 3], **kwargs)
 
-
 # Pre-Act
-
 
 def lowres_preact_resnet14(**kwargs):
     """Constructs a Pre-Act ResNet-14 model."""
@@ -437,3 +497,65 @@ def lowres_preact_resnet34(**kwargs):
     """Constructs a Pre-Act ResNet-34 model."""
     return _resnet(PreactBasicBlock, [3, 4, 6, 3], **kwargs)
 
+# DepthWise
+
+def lowres_resnet14_dw(**kwargs):
+    """Constructs a DepthWise ResNet-14 model."""
+    kwargs["groups"] = -1
+    return _resnet(DepthwiseBasicBlock, [2, 2, 2], **kwargs)
+
+
+def lowres_resnet18_dw(**kwargs):
+    """Constructs a DepthWise ResNet-18 model."""
+    kwargs["groups"] = -1
+    return _resnet(DepthwiseBasicBlock, [2, 2, 2, 2], **kwargs)
+
+
+def lowres_resnet34_dw(**kwargs):
+    """Constructs a DepthWise ResNet-34 model."""
+    kwargs["groups"] = -1
+    return _resnet(DepthwiseBasicBlock, [3, 4, 6, 3], **kwargs)
+
+
+def lowres_resnet50_dw(**kwargs):
+    """Constructs a DepthWise ResNet-50 model."""
+    kwargs["groups"] = -1
+    return _resnet(Bottleneck, [3, 4, 6, 3], **kwargs)
+
+
+def lowres_resnet101_dw(**kwargs):
+    """Constructs a DepthWise ResNet-101 model."""
+    kwargs["groups"] = -1
+    return _resnet(Bottleneck, [3, 4, 23, 3], **kwargs)
+
+
+def lowres_resnet152_dw(**kwargs):
+    """Constructs a DepthWise ResNet-152 model."""
+    kwargs["groups"] = -1
+    return _resnet(Bottleneck, [3, 8, 36, 3], **kwargs)
+
+
+def lowres_wide_resnet50_2_dw(**kwargs):
+    r"""DepthWise Wide ResNet-50-2 model from
+    `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
+    The model is the same as ResNet except for the bottleneck number of channels
+    which is twice larger in every block. The number of channels in outer 1x1
+    convolutions is the same, e.g. last block in ResNet-50 has 2048-512-2048
+    channels, and in Wide ResNet-50-2 has 2048-1024-2048.
+    """
+    kwargs["groups"] = -1
+    kwargs["width_per_group"] = 64 * 2
+    return _resnet(Bottleneck, [3, 4, 6, 3], **kwargs)
+
+
+def lowres_wide_resnet101_2_dw(**kwargs):
+    r"""DepthWise Wide ResNet-101-2 model from
+    `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
+    The model is the same as ResNet except for the bottleneck number of channels
+    which is twice larger in every block. The number of channels in outer 1x1
+    convolutions is the same, e.g. last block in ResNet-50 has 2048-512-2048
+    channels, and in Wide ResNet-50-2 has 2048-1024-2048.
+    """
+    kwargs["groups"] = -1
+    kwargs["width_per_group"] = 64 * 2
+    return _resnet(Bottleneck, [3, 4, 23, 3], **kwargs)
