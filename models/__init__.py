@@ -13,6 +13,7 @@ from .lowresresnet9 import lowres_resnet9
 from .lowresalexnet import lowres_alexnet
 from .lowreslenet import lowres_lenet5
 from .convnext import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
+from .open_lth.resnet import ResNet
 
 import torchvision.models
 from functools import partial
@@ -78,3 +79,5 @@ def get_model(name):
         return all_classifiers.get(name)
     elif name.startswith("torchvision_"):
         return partial(torchvision_loader, name=name.replace("torchvision_", ""))
+    elif name.startswith("openlth_"):
+        return partial(ResNet.get_model_from_name, name=name.replace("openlth_", ""))
