@@ -222,8 +222,10 @@ class Trainer:
         if get_arg(self.args, "warmup_bn", False):
             self.warmup_bn(self.model, trainloader, self.device)
 
-        val_metrics = self.validate(self.model, valloader, self.criterion, self.device)
-        self._log(prepend_key_prefix(val_metrics, "val/"))
+        if get_arg(self.args, "initial_val", False):
+            val_metrics = self.validate(self.model, valloader, self.criterion, self.device)
+            self._log(prepend_key_prefix(val_metrics, "val/"))
+
         if output_dir:
             self.checkpoint.save(0, 0, self.model, {})
 
@@ -346,6 +348,7 @@ if __name__ == "__main__":
     parser.add_argument("--freeze_conv2d_3x3", type=str2bool, default=False)
 
     parser.add_argument("--warmup_bn", type=str2bool, default=False)
+    parser.add_argument("--initial_val", type=str2bool, default=False)
 
     parser.add_argument("--model_in_channels", type=int, default=-1)
     parser.add_argument("--model_num_classes", type=int, default=-1)
