@@ -330,7 +330,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--model", type=str)
     parser.add_argument("--dataset", type=str)
-    parser.add_argument("--dataset_dir", type=str, default="/workspace/data/datasets/")
+    parser.add_argument("--dataset_dir", type=str, default="~/datasets/")
     parser.add_argument(
         "--output_dir", type=str, default="output/%dataset%/%model%/version_%seed%"
     )
