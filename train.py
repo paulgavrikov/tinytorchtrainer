@@ -287,7 +287,26 @@ def main(args):
         os.path.join(args.dataset_dir, args.dataset)
     )
 
-    if args.device == "auto_gpu_by_memory":
+    best_is_gpu = False
+
+    if args.device == "auto":
+
+        try:
+            mps_available = torch.backends.mps.is_available()
+        except:
+            mps_available = False
+
+        if torch.cuda.is_available():
+            best_is_gpu = True
+        elif mps_available:
+            logging.info(f"Autoselected device: Apple Silicon")
+            vars(args)["device"] = "mps"
+        else:
+            logging.info(f"Autoselected device: CPU")
+            vars(args)["device"] = "cpu"
+
+
+    if args.device == "auto_gpu_by_memory" or best_is_gpu:
         best_device = f"cuda:{np.argmin(get_gpu_stats())}"
         logging.info(f"Autoselected device: {best_device}")
         vars(args)["device"] = best_device
@@ -315,7 +334,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir", type=str, default="output/%dataset%/%model%/version_%seed%"
     )
-    parser.add_argument("--device", type=str, default="auto_gpu_by_memory")
+    parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--cudnn_benchmark", type=str2bool, default=True)
     parser.add_argument("--checkpoints", type=none2str, default=None, choices=["all", "best", "None", None])
     parser.add_argument("--checkpoints_metric", type=str, default="val/acc")
