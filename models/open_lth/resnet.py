@@ -5,8 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 from re import S
+from statistics import mode
 import torch.nn as nn
 import torch.nn.functional as F
+from functools import partial
 
 class ResNet(nn.Module):
     """A residual neural network as originally designed for CIFAR-10."""
@@ -132,9 +134,16 @@ class ResNet(nn.Module):
         """
 
         depthwise = False
+        skip_spatial_convs = False
+        spatial = False
         if "_dw" in name:
             depthwise = True
             name = name.replace("_dw", "")
+
+        if "_di" in name:
+            depthwise = True
+            skip_spatial_convs = True
+            name = name.replace("_di", "")
 
         spatial = False
         if "_sp" in name:
@@ -151,5 +160,19 @@ class ResNet(nn.Module):
         D = (D - 2) // 6
         plan = [(W, D), (2*W, D), (4*W, D)]
 
-        return ResNet(plan, spatial=spatial, depthwise=depthwise, **kwargs)
+        resnet = ResNet(plan, spatial=spatial, depthwise=depthwise, **kwargs)
 
+        if skip_spatial_convs:
+            replace_conv2d(resnet, nn.Sequential, filter_cb=lambda m: m.kernel_size != (1, 1) and m.stride == (1, 1))
+            replace_conv2d(resnet, partial(nn.Upsample, scale_factor=0.5, mode="bilinear"), filter_cb=lambda m: m.kernel_size != (1, 1) and m.stride == (2, 2))
+        return resnet
+
+def replace_conv2d(module, new_cls, filter_cb=None, **kwargs):
+    for name, child in module.named_children():
+   
+        if type(child) == nn.Conv2d and (not filter_cb or (filter_cb and filter_cb(child))) and name != "conv":
+            new_module = new_cls()
+            setattr(module, name, new_module)
+
+    for child in module.children():
+        replace_conv2d(child, new_cls, filter_cb, **kwargs)
