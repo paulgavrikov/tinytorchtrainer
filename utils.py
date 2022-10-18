@@ -13,6 +13,22 @@ from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
 import torch.nn.functional as F
 
 
+class LabelSmoothingLoss(torch.nn.Module):
+    def __init__(self, smoothing=0.0, dim=-1):
+        super(LabelSmoothingLoss, self).__init__()
+        self.confidence = 1.0 - smoothing
+        self.smoothing = smoothing
+        self.dim = dim
+
+    def forward(self, pred, target):
+        pred = pred.log_softmax(dim=self.dim)
+        with torch.no_grad():
+            true_dist = torch.zeros_like(pred)
+            true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
+            true_dist += self.smoothing / pred.size(self.dim)
+        return torch.mean(torch.sum(-true_dist * pred, dim=self.dim))
+
+    
 class MockContextManager:
 
     def __init__(self, **kwargs) -> None:
@@ -38,7 +54,7 @@ class MockScaler:
 
 
 class CSVLogger:
-    
+
     def __init__(self, log_file):
         self.rows = []
         self.log_file = log_file 
@@ -58,19 +74,19 @@ class ConsoleLogger:
 
 
 class WandBLogger:
-    
+
     def __init__(self, project, args):
         wandb.init(config=args, project=project, notes=get_arg(args, "wandb_notes", None))
 
     def log(self, epoch, step, row, silent=False):
         row = {"timestamp": datetime.timestamp(datetime.now()), "epoch": epoch, "step": step, **row}
         wandb.log(row)
-        
+
 
 class CheckpointCallback:
-    
+
     CKPT_PATTERN = "epoch=%d-step=%d.ckpt"
-    
+
     def __init__(self, path, args=None):
         self.path = path 
         self.mode = args.checkpoints
@@ -79,11 +95,12 @@ class CheckpointCallback:
         self.target_metric = get_arg(args, "checkpoints_metric", "val/acc")
         self.target_metric_target = get_arg(args, "checkpoints_metric_target", "max")
         os.makedirs(self.path, exist_ok=True)
+        logging.info(f"saving checkpoints to {self.path}")
 
     def save(self, epoch, step, model, metrics):
         if self.mode == "all":
             out_path = os.path.join(self.path, self.CKPT_PATTERN % (epoch, step))
-            logging.debug(f"saving {out_path}")
+            logging.info(f"saving {out_path}")
             torch.save(
                 {
                     "state_dict": model.state_dict(), 
@@ -94,7 +111,7 @@ class CheckpointCallback:
                 (metrics[self.target_metric] < self.last_best and self.target_metric_target == "min")):
             self.last_best = metrics[self.target_metric]
             out_path = os.path.join(self.path, os.path.join(os.path.split(self.CKPT_PATTERN)[0], "best.ckpt"))
-            logging.debug(f"saving {out_path}")
+            logging.info(f"saving {out_path}")
             torch.save(
                 {
                     "state_dict": model.state_dict(), 
@@ -103,21 +120,21 @@ class CheckpointCallback:
                 }, out_path)
 
 
-    
+
 class NormalizedModel(torch.nn.Module):
-    
+
     def __init__(self, model, mean, std):
         super(NormalizedModel, self).__init__()
         self.model = model
         self.mean = torch.nn.Parameter(torch.Tensor(mean).view(-1, 1, 1), requires_grad=False)
         self.std = torch.nn.Parameter(torch.Tensor(std).view(-1, 1, 1), requires_grad=False)
-        
+
     def forward(self, x):
         out = (x - self.mean) / self.std 
         out = self.model(out)
         return out
     
-    
+
 def none2str(value):  # from https://stackoverflow.com/questions/48295246/how-to-pass-none-keyword-as-command-line-argument
     if value == "None":
         return None
@@ -193,7 +210,7 @@ def cutmix_batch(batch_x, batch_y, beta):
     batch_x[:, :, bbx1:bbx2, bby1:bby2] = batch_x[rand_index, :, bbx1:bbx2, bby1:bby2]
     # adjust lambda to exactly match pixel ratio
     lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (batch_x.size()[-1] * batch_x.size()[-2]))
-    
+
     return batch_x, batch_y, target_a, target_b, lam
 
 

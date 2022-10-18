@@ -16,6 +16,9 @@ from utils import (
     ConsoleLogger,
     WandBLogger,
     CheckpointCallback,
+    MockContextManager,
+    MockScaler,
+    LabelSmoothingLoss
     none2str,
     str2bool,
     prepend_key_prefix,
@@ -93,7 +96,7 @@ class Trainer:
 
         return model
 
-    def train(self, model, trainloader, opt, criterion, device, scheduler=None):
+    def train(self, model, trainloader, opt, criterion, device, scaler, context, scheduler=None):
 
         correct = 0
         total = 0
@@ -111,13 +114,13 @@ class Trainer:
                 x, y, target_a, target_b, lam = cutmix_batch(x, y, self.args.cutmix_beta)
 
             opt.zero_grad()
-            y_pred = model(x)
-            if not use_cutmix:
-                loss = criterion(y_pred, y)
-            else:
-                loss = cutmix_loss(y_pred, target_a, target_b, lam)
-            loss.backward()
-            opt.step()
+            with context():
+                y_pred = model(x)
+                if not use_cutmix:
+                    loss = criterion(y_pred, y)
+                else:
+                    loss = cutmix_loss(y_pred, target_a, target_b, lam)
+            scaler.scale(loss).backward()
 
             batch_loss = loss.item() * len(y)
             batch_correct = (y_pred.argmax(axis=1) == y).sum().item()
@@ -127,12 +130,14 @@ class Trainer:
             total += len(y)
             self.steps += 1
 
+            scaler.step(opt)
+            scaler.update()
         if scheduler:
             scheduler.step()
 
         return {"acc": correct / total, "loss": total_loss / total}
 
-    def validate(self, model, valloader, criterion, device):
+    def validate(self, model, valloader, criterion, device, scaler, context):
         correct = 0
         total = 0
         total_loss = 0
@@ -143,8 +148,9 @@ class Trainer:
                 x = x.to(device)
                 y = y.to(device)
 
-                y_pred = model(x)
-                loss = criterion(y_pred, y)
+                with context():
+                    y_pred = model(x)
+                    loss = criterion(y_pred, y)
                 total_loss += loss.item() * len(y)
 
                 correct += (y_pred.argmax(axis=1) == y).sum().item()
@@ -162,7 +168,6 @@ class Trainer:
     def _log(self, metrics_dict, **kwargs):
         for logger in self.loggers:
                 logger.log(self.epoch, self.steps, metrics_dict, **kwargs)
-
 
     def fit(self, dataset, output_dir=None):
         torch.backends.cudnn.benchmark = get_arg(self.args, "cudnn_benchmark", False)
@@ -203,7 +208,14 @@ class Trainer:
             )
             self.scheduler = None
 
-        self.criterion = torch.nn.CrossEntropyLoss().to(self.device)
+        self.criterion = LabelSmoothingLoss(smoothing=get_arg(self.args, "label_smoothing", 0)).to(self.device)
+
+        if get_arg(self.args, "use_amp", False):
+            self.scaler = torch.cuda.amp.GradScaler()
+            self.context = torch.cuda.amp.autocast
+        else:
+            self.scaler = MockScaler()
+            self.context = MockContextManager
 
         self.loggers = []
         self.loggers.append(ConsoleLogger())
@@ -225,7 +237,14 @@ class Trainer:
             self.warmup_bn(self.model, trainloader, self.device)
 
         if get_arg(self.args, "initial_val", False):
-            val_metrics = self.validate(self.model, valloader, self.criterion, self.device)
+            val_metrics = self.validate(
+                self.model, 
+                valloader, 
+                self.criterion, 
+                self.device, 
+                self.scaler, 
+                self.context
+            )
             self._log(prepend_key_prefix(val_metrics, "val/"))
 
         if output_dir:
@@ -244,10 +263,17 @@ class Trainer:
                 self.opt,
                 self.criterion,
                 self.device,
+                self.scaler, 
+                self.context,
                 self.scheduler
             )
             val_metrics = self.validate(
-                self.model, valloader, self.criterion, self.device
+                self.model, 
+                valloader, 
+                self.criterion, 
+                self.device, 
+                self.scaler, 
+                self.context
             )
 
             metrics = {
@@ -340,6 +366,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--cudnn_benchmark", type=str2bool, default=True)
+    parser.add_argument("--use_amp", type=str2bool, default=False)
     parser.add_argument("--checkpoints", type=none2str, default=None, choices=["all", "best", "None", None])
     parser.add_argument("--checkpoints_metric", type=str, default="val/acc")
     parser.add_argument("--checkpoints_metric_target", type=str, default="max", choices=["max", "min"])
@@ -368,8 +395,8 @@ if __name__ == "__main__":
     parser.add_argument("--cutmix_prob", type=float, default=0)
     parser.add_argument("--cutmix_beta", type=float, default=1)
 
-    parser.add_argument("--use_amp", type=str2bool, default=False)
-
+    parser.add_argument("--label_smoothing", type=float, default=0.1)
+    
     parser.add_argument("--learning_rate", type=float, default=1e-2)
     parser.add_argument("--weight_decay", type=float, default=1e-2)
     parser.add_argument("--momentum", type=float, default=0.9)
