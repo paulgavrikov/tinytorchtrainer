@@ -9,6 +9,8 @@ import logging
 import numpy as np
 from tqdm import tqdm
 from datetime import datetime
+from rich.progress import track
+
 from utils import (
     CSVLogger,
     ConsoleLogger,
@@ -59,7 +61,7 @@ class Trainer:
 
         if get_arg(args, "reset_all_but_conv2d_3x3"):
             for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
-                if type(module) is not torch.nn.Conv2d or module.kernel_size != (3, 3):
+                if type(module) is not torch.nn.Conv2d or module.kernel_size == (1, 1):
                     logging.info(f"Resetting {mname} {module}")
                     try:
                         module.reset_parameters()
@@ -75,7 +77,7 @@ class Trainer:
 
         if get_arg(args, "freeze_conv2d_3x3"):
             for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
-                if type(module) is torch.nn.Conv2d and module.kernel_size == (3, 3):
+                if type(module) is torch.nn.Conv2d and module.kernel_size != (1, 1):
                     for pname, param in module.named_parameters():
                         logging.info(f"Freezing {mname}/{pname} {module}")
                         param.requires_grad = False
@@ -98,7 +100,7 @@ class Trainer:
         total_loss = 0
 
         model.train()
-        for x, y in tqdm(trainloader, desc="Training", total=len(trainloader)):
+        for x, y in track(trainloader, description="Training  ", total=len(trainloader)):
             x = x.to(device)
             y = y.to(device)
 
@@ -137,7 +139,7 @@ class Trainer:
 
         model.eval()
         with torch.no_grad():
-            for x, y in tqdm(valloader, desc="Validating", total=len(valloader)):
+            for x, y in track(valloader, description="Validating", total=len(valloader)):
                 x = x.to(device)
                 y = y.to(device)
 
@@ -153,7 +155,7 @@ class Trainer:
     def warmup_bn(self, model, trainloader, device):
         with torch.no_grad():
             model.train()
-            for x, _ in tqdm(trainloader, desc="Warm-Up", total=len(trainloader)):
+            for x, _ in track(trainloader, description="Warm-Up   ", total=len(trainloader)):
                 x = x.to(device)
                 model(x)
 
@@ -201,7 +203,7 @@ class Trainer:
             )
             self.scheduler = None
 
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.CrossEntropyLoss().to(self.device)
 
         self.loggers = []
         self.loggers.append(ConsoleLogger())
