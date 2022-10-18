@@ -4,6 +4,7 @@ import argparse
 from train import Trainer
 import data
 import os
+from utils import str2bool
 
 
 def main(args):
@@ -36,7 +37,7 @@ def main(args):
     torch.onnx.export(trainer.model,               # model being run
                     x,                         # model input (or a tuple for multiple inputs)
                     args.output,   # where to save the model (can be a file or file-like object)
-                    export_params=True,        # store the trained parameter weights inside the model file
+                    export_params=args.export_params,        # store the trained parameter weights inside the model file
                     opset_version=13,          # the ONNX version to export the model to
                     do_constant_folding=False,  # whether to execute constant folding for optimization
                     training=torch.onnx.TrainingMode.TRAINING, 
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("load_checkpoint", type=str, default=None)
     parser.add_argument("output", type=str, default=None)
+    parser.add_argument("--export_params", type=str2bool, default=True)
     _args = parser.parse_args()
     main(_args)
     sys.exit(0)
