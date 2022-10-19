@@ -43,8 +43,10 @@ class Trainer:
 
         logging.info(f"Initializing {args.model}")
 
+        activation = get_arg(args, "activation", None)
+
         model = models.get_model(args.model)(
-            in_channels=in_channels, num_classes=num_classes
+            in_channels=in_channels, num_classes=num_classes, activation_fn=getattr(torch.nn, activation) if activation else None
         )
 
         if args.load_checkpoint is not None:
@@ -381,6 +383,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--model_in_channels", type=int, default=-1)
     parser.add_argument("--model_num_classes", type=int, default=-1)
+
+    parser.add_argument("--activation", type=none2str, default=None)
 
     parser.add_argument("--max_epochs", type=int, default=125)
     parser.add_argument("--batch_size", type=int, default=256)

@@ -42,7 +42,7 @@ class ResNet(nn.Module):
                 raise ValueError("Invalid combination of depthwise and spatial.")
 
 
-        def __init__(self, f_in: int, f_out: int, downsample=False, depthwise=False, spatial=False):
+        def __init__(self, f_in: int, f_out: int, activation_fn, downsample=False, depthwise=False, spatial=False):
             super().__init__()
 
             stride = 2 if downsample else 1
@@ -52,7 +52,7 @@ class ResNet(nn.Module):
             self.conv2 = ResNet.Block.make_conv(f_out, f_out, 1, depthwise, spatial)
             self.bn2 = nn.BatchNorm2d(f_out)
 
-            self.activation = nn.ReLU(inplace=True)
+            self.activation = activation_fn()
 
             # No parameters for shortcut connections.
             if downsample or f_in != f_out:
@@ -75,22 +75,25 @@ class ResNet(nn.Module):
             out += self.shortcut(x)
             return self.activation(out)
 
-    def __init__(self, plan, spatial=False, depthwise=False, in_channels=3, num_classes=10, **kwargs):
+    def __init__(self, plan, spatial=False, depthwise=False, in_channels=3, num_classes=10, activation_fn=None, **kwargs):
         super().__init__()
+
+        if activation_fn is None:
+            activation_fn = partial(nn.ReLU, inplace=True)
 
         # Initial convolution.
         current_filters = plan[0][0]
 
         self.conv = ResNet.Block.make_conv(in_channels, current_filters, stride=1, depthwise=depthwise, spatial=spatial)
         self.bn = nn.BatchNorm2d(current_filters)
-        self.activation = nn.ReLU(inplace=True)
+        self.activation = activation_fn()
 
         # The subsequent blocks of the ResNet.
         blocks = []
         for segment_index, (filters, num_blocks) in enumerate(plan):
             for block_index in range(num_blocks):
                 downsample = segment_index > 0 and block_index == 0
-                blocks.append(ResNet.Block(current_filters, filters, downsample, spatial=spatial, depthwise=depthwise))
+                blocks.append(ResNet.Block(current_filters, filters, activation_fn=activation_fn, downsample, spatial=spatial, depthwise=depthwise))
                 current_filters = filters
 
         self.blocks = nn.Sequential(*blocks)
