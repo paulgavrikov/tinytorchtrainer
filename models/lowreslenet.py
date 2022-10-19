@@ -20,7 +20,7 @@ class LowResLeNet5(nn.Module):
             nn.AvgPool2d(kernel_size=(2, 2), stride=2),
             nn.Conv2d(6, 16, kernel_size=5),
             activation_fn(),
-            nn.AvgPool2d(kernel_size=(2, 2), stride=2),
+            nn.AdaptiveAvgPool2d(5),
         )
         self.fc = nn.Sequential(
             nn.LazyLinear(120),

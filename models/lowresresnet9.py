@@ -79,7 +79,7 @@ class LowResResNet9(nn.Module):
             activation_fn(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
             ResidualBlock(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1, activation_fn=activation_fn, norm_layer=norm_layer),
-            nn.MaxPool2d(kernel_size=4, stride=4),
+            nn.AdaptiveMaxPool2d(1),
             nn.Flatten()
         )
 

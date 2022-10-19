@@ -29,7 +29,7 @@ class LowResAlexNet(nn.Module):
             activation_fn(inplace=True),
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
             activation_fn(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.AdaptiveMaxPool2d(4),
         )
         #self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
         self.fc = nn.Sequential(
