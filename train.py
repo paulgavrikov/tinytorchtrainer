@@ -134,8 +134,8 @@ class Trainer:
 
             scaler.step(opt)
             scaler.update()
-        if scheduler:
-            scheduler.step()
+            if scheduler:
+                scheduler.step()
 
         return {"acc": correct / total, "loss": total_loss / total}
 
@@ -185,30 +185,41 @@ class Trainer:
                 nesterov=self.args.nesterov,
                 weight_decay=self.args.weight_decay,
             )
-            self.scheduler = torch.optim.lr_scheduler.StepLR(
-                self.opt, step_size=get_arg(self.args, "scheduler_step", 30), gamma=0.1
-            )
         elif self.args.optimizer == "adam":
             self.opt = torch.optim.Adam(
                 filter(lambda x: x.requires_grad, self.model.parameters()),
                 lr=self.args.learning_rate,
                 weight_decay=self.args.weight_decay,
             )
-            self.scheduler = None
         elif self.args.optimizer == "rmsprop":
             self.opt = torch.optim.RMSprop(
                 filter(lambda x: x.requires_grad, self.model.parameters()),
                 lr=self.args.learning_rate,
                 weight_decay=self.args.weight_decay,
             )
-            self.scheduler = None
         elif self.args.optimizer == "adamw":
             self.opt = torch.optim.AdamW(
                 filter(lambda x: x.requires_grad, self.model.parameters()),
                 lr=self.args.learning_rate,
                 weight_decay=self.args.weight_decay,
             )
-            self.scheduler = None
+        else:
+            raise NotImplementedError()
+
+        steps_per_epoch = len(trainloader)
+
+        if get_arg(self.args, "scheduler", "step") == "step":
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                self.opt, step_size=get_arg(self.args, "scheduler_step", 30) * steps_per_epoch, gamma=0.1
+            )
+        elif self.args.scheduler == "cosine":
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.opt, last_epoch=self.args.max_epochs * steps_per_epoch
+            )
+        elif self.args.schedule is None:
+            self.scheduler = None      
+        else:
+            raise NotImplementedError()
 
         self.criterion = LabelSmoothingLoss(smoothing=get_arg(self.args, "label_smoothing", 0)).to(self.device)
 
@@ -394,6 +405,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
 
     # scheduler
+    parser.add_argument("--scheduler", type=none2str, default="step", choices=[None, "step", "cosine"])
     parser.add_argument("--scheduler_step", type=int, default=30)
 
     parser.add_argument("--cutmix_prob", type=float, default=0)
