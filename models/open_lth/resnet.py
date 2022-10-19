@@ -93,7 +93,7 @@ class ResNet(nn.Module):
         for segment_index, (filters, num_blocks) in enumerate(plan):
             for block_index in range(num_blocks):
                 downsample = segment_index > 0 and block_index == 0
-                blocks.append(ResNet.Block(current_filters, filters, activation_fn=activation_fn, downsample, spatial=spatial, depthwise=depthwise))
+                blocks.append(ResNet.Block(current_filters, filters, activation_fn=activation_fn, downsample=downsample, spatial=spatial, depthwise=depthwise))
                 current_filters = filters
 
         self.blocks = nn.Sequential(*blocks)
