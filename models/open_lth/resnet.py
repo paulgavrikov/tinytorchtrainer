@@ -81,7 +81,7 @@ class ResNet(nn.Module):
         # Initial convolution.
         current_filters = plan[0][0]
 
-        self.conv = make_conv(in_channels, current_filters, stride=, depthwise=depthwise, spatial=spatial)
+        self.conv = ResNet.Block.make_conv(in_channels, current_filters, stride=1, depthwise=depthwise, spatial=spatial)
         self.bn = nn.BatchNorm2d(current_filters)
         self.activation = nn.ReLU(inplace=True)
 
