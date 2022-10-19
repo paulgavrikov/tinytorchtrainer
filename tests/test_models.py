@@ -4,11 +4,14 @@ import torch
 
 
 def test_model_init():
-    x = torch.random(1, 3, 32, 32)
+    x_small = torch.rand(1, 3, 32, 32)
+    x_large = torch.rand(1, 3, 224, 224)
+    
     for model_name in models.all_classifiers:
         print(model_name)
         model = models.get_model(model_name)(in_channels=3, num_classes=10)
-        model(x)
+        model(x_small)
+        model(x_large)
         assert model is not None
 
 
