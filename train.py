@@ -219,7 +219,7 @@ class Trainer:
             )
         elif self.args.scheduler == "cosine":
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                self.opt, last_epoch=self.args.max_epochs * steps_per_epoch
+                self.opt, T_max=self.args.max_epochs * steps_per_epoch
             )
         elif self.args.schedule is None:
             self.scheduler = None      
