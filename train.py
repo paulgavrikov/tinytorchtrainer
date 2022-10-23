@@ -72,6 +72,13 @@ class Trainer:
                         module.reset_parameters()
                     except:
                         logging.info("... failed")
+                        
+        if get_arg(args, "freeze_all_but_bn", False):  
+            for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
+                if type(module) is not torch.nn.BatchNorm2d:
+                    for pname, param in module.named_parameters():
+                        logging.info(f"Freezing {mname}/{pname} {module}")
+                        param.requires_grad = False
 
         if get_arg(args, "freeze_layers") == "conv3x3":
             for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
@@ -397,6 +404,7 @@ if __name__ == "__main__":
     parser.add_argument("--reset_head", type=str2bool, default=False)
     parser.add_argument("--reset_all_but_conv2d_3x3", type=str2bool, default=False)
     parser.add_argument("--freeze_conv2d_3x3", type=str2bool, default=False)
+    parser.add_argument("--freeze_all_but_bn", type=str2bool, default=False)
 
     parser.add_argument("--warmup_bn", type=str2bool, default=False)
     parser.add_argument("--initial_val", type=str2bool, default=False)
