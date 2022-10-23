@@ -217,6 +217,10 @@ class Trainer:
             self.scheduler = torch.optim.lr_scheduler.StepLR(
                 self.opt, step_size=get_arg(self.args, "scheduler_step", 30) * steps_per_epoch, gamma=0.1
             )
+        elif self.args.scheduler == "frankle_step":
+            self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                self.opt, milestones=[80*steps_per_epoch, 120*steps_per_epoch], gamma=0.1
+            )
         elif self.args.scheduler == "cosine":
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.opt, T_max=self.args.max_epochs * steps_per_epoch
@@ -410,7 +414,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
 
     # scheduler
-    parser.add_argument("--scheduler", type=none2str, default="step", choices=[None, "step", "cosine"])
+    parser.add_argument("--scheduler", type=none2str, default="step", choices=[None, "step", "cosine", "frankle_step"])
     parser.add_argument("--scheduler_step", type=int, default=30)
 
     parser.add_argument("--cutmix_prob", type=float, default=0)
