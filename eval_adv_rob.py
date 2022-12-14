@@ -67,7 +67,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load_checkpoint", type=str, default=None)
+    parser.add_argument("load_checkpoint", type=str, default=None)
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--norm", type=str, default="Linf")
     parser.add_argument("--eps", type=float, default=8/255)
