@@ -30,6 +30,26 @@ from utils import (
 )
 
 
+def load_trainer(args):
+    ckpt = torch.load(args.load_checkpoint, map_location="cpu")
+    saved_args = argparse.Namespace()
+
+    for k, v in ckpt["args"].items():
+        vars(saved_args)[k] = v
+
+    vars(saved_args)["load_checkpoint"] = args.load_checkpoint
+    vars(saved_args)["device"] = args.device
+
+    dataset = data.get_dataset(saved_args.dataset)(os.path.join(
+            saved_args.dataset_dir, saved_args.dataset))
+
+    vars(saved_args)["model_in_channels"] = dataset.in_channels
+    vars(saved_args)["model_num_classes"] = dataset.num_classes
+
+    trainer = Trainer(saved_args)
+    return trainer
+
+
 class Trainer:
     def __init__(self, args):
         self.model = Trainer.prepare_model(

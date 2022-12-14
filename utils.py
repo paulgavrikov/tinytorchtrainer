@@ -28,7 +28,7 @@ class LabelSmoothingLoss(torch.nn.Module):
             true_dist += self.smoothing / pred.size(self.dim)
         return torch.mean(torch.sum(-true_dist * pred, dim=self.dim))
 
-    
+
 class MockContextManager:
 
     def __init__(self, **kwargs) -> None:
@@ -128,7 +128,6 @@ class CheckpointCallback:
                     "metrics": {"epoch": epoch, "step": step, **metrics}, 
                     "args": vars(self.args)
                 }, self.last_path)
-
 
 
 class NormalizedModel(torch.nn.Module):
@@ -252,3 +251,4 @@ class LayerHook:
             else:
                 self.storage = out[0].detach().cpu()
         self.hook_handle = module.register_forward_hook(hook)
+
