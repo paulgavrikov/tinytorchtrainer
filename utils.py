@@ -92,6 +92,7 @@ class CheckpointCallback:
         self.mode = args.checkpoints
         self.args = args
         self.last_best = 0
+        self.last_path = None
         self.target_metric = get_arg(args, "checkpoints_metric", "val/acc")
         self.target_metric_target = get_arg(args, "checkpoints_metric_target", "max")
         os.makedirs(self.path, exist_ok=True)
@@ -99,25 +100,34 @@ class CheckpointCallback:
 
     def save(self, epoch, step, model, metrics):
         if self.mode == "all":
-            out_path = os.path.join(self.path, self.CKPT_PATTERN % (epoch, step))
-            logging.info(f"saving {out_path}")
+            self.last_path = os.path.join(self.path, self.CKPT_PATTERN % (epoch, step))
+            logging.info(f"saving {self.last_path}")
             torch.save(
                 {
                     "state_dict": model.state_dict(), 
                     "metrics": {"epoch": epoch, "step": step, **metrics}, 
                     "args": vars(self.args)
-                }, out_path)
+                }, self.last_path)
+        elif self.mode == "last":
+            self.last_path = os.path.join(self.path, os.path.join(os.path.split(self.CKPT_PATTERN)[0], "last.ckpt"))
+            logging.info(f"saving {self.last_path}")
+            torch.save(
+                {
+                    "state_dict": model.state_dict(), 
+                    "metrics": {"epoch": epoch, "step": step, **metrics}, 
+                    "args": vars(self.args)
+                }, self.last_path)
         elif self.mode == "best" and (self.target_metric in metrics) and ((metrics[self.target_metric] > self.last_best and self.target_metric_target == "max") or \
                 (metrics[self.target_metric] < self.last_best and self.target_metric_target == "min")):
             self.last_best = metrics[self.target_metric]
-            out_path = os.path.join(self.path, os.path.join(os.path.split(self.CKPT_PATTERN)[0], "best.ckpt"))
-            logging.info(f"saving {out_path}")
+            self.last_path = os.path.join(self.path, os.path.join(os.path.split(self.CKPT_PATTERN)[0], "best.ckpt"))
+            logging.info(f"saving {self.last_path}")
             torch.save(
                 {
                     "state_dict": model.state_dict(), 
                     "metrics": {"epoch": epoch, "step": step, **metrics}, 
                     "args": vars(self.args)
-                }, out_path)
+                }, self.last_path)
 
 
 

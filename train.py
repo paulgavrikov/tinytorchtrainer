@@ -72,7 +72,7 @@ class Trainer:
                         module.reset_parameters()
                     except:
                         logging.info("... failed")
-                        
+
         if get_arg(args, "freeze_all_but_bn", False):  
             for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
                 if type(module) is not torch.nn.BatchNorm2d:
@@ -107,6 +107,8 @@ class Trainer:
         logging.info(
             f"TOTAL: {sum(list(map(lambda p: p.numel(), filter(lambda p: p.requires_grad, model.parameters()))))}"
         )
+        
+        logging.info(model)
 
         return model
 
@@ -396,7 +398,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--cudnn_benchmark", type=str2bool, default=True)
     parser.add_argument("--use_amp", type=str2bool, default=False)
-    parser.add_argument("--checkpoints", type=none2str, default=None, choices=["all", "best", "None", None])
+    parser.add_argument("--checkpoints", type=none2str, default=None, choices=["all", "best", "None", "last", None])
     parser.add_argument("--checkpoints_metric", type=str, default="val/acc")
     parser.add_argument("--checkpoints_metric_target", type=str, default="max", choices=["max", "min"])
 
@@ -416,7 +418,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--max_epochs", type=int, default=125)
     parser.add_argument("--batch_size", type=int, default=256)
-    parser.add_argument("--num_workers", type=int, default=0)
+    parser.add_argument("--num_workers", type=int, default=4)
 
     # optimizer
     parser.add_argument("--optimizer", type=str, default="sgd", choices=["adam", "sgd", "adamw", "rmsprop"])
