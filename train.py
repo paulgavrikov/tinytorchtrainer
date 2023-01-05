@@ -10,6 +10,8 @@ import numpy as np
 from tqdm import tqdm
 from datetime import datetime
 from rich.progress import track
+import foolbox as fb
+
 
 from utils import (
     CSVLogger,
@@ -26,7 +28,9 @@ from utils import (
     get_arg,
     get_gpu_stats,
     cutmix_batch,
-    cutmix_loss
+    cutmix_loss,
+    eval_adv,
+    adv_attack
 )
 
 
@@ -132,7 +136,7 @@ class Trainer:
 
         return model
 
-    def train(self, model, trainloader, opt, criterion, device, scaler, context, scheduler=None):
+    def train(self, model, trainloader, opt, criterion, device, scaler, context, scheduler=None, dataset=None):
 
         correct = 0
         total = 0
@@ -148,6 +152,10 @@ class Trainer:
             if r_cutmix < get_arg(self.args, "cutmix_prob", 0):
                 use_cutmix = True
                 x, y, target_a, target_b, lam = cutmix_batch(x, y, self.args.cutmix_beta)
+
+            if get_arg(self.args, "adv_train", False):
+                x = adv_attack(model=model, fb_attack=getattr(fb.attacks, self.args.adv_train_attack), 
+                    attack_extra=eval(self.args.adv_train_attack_extras), dataset=dataset, device=self.device)
 
             opt.zero_grad()
             with context():
@@ -316,7 +324,8 @@ class Trainer:
                 self.device,
                 self.scaler, 
                 self.context,
-                self.scheduler
+                self.scheduler,
+                dataset
             )
             val_metrics = self.validate(
                 self.model, 
@@ -333,6 +342,10 @@ class Trainer:
                 "val/acc_max": val_acc_max,
                 "best_epoch": best_epoch,
             }
+
+            if self.args.adv_train:
+                 metrics["val/robust_acc"] = eval_adv(model=self.model, fb_attack=getattr(fb.attacks, self.args.adv_val_attack), 
+                    attack_extra=eval(self.args.adv_val_attack_extras), dataset=dataset, device=self.device)
 
             if val_acc_max < metrics["val/acc"]:
                 val_acc_max = metrics["val/acc"]
@@ -462,6 +475,14 @@ if __name__ == "__main__":
 
     parser.add_argument("--verbose", type=str2bool, default=False)
 
+    # adversarial training
+    parser.add_argument("--adv_train", type=str2bool, default=False)
+    parser.add_argument("--adv_train_attack", type=str)
+    parser.add_argument("--adv_train_attack_extras", type=none2str, default=None)
+    parser.add_argument("--adv_val_attack", type=str)
+    parser.add_argument("--adv_val_attack_extras", type=none2str, default=None)
+
+    # wandb
     parser.add_argument("--wandb_project", type=none2str, default=None)
     parser.add_argument("--wandb_notes", type=none2str, default=None)
     parser.add_argument("--wandb_extra_1", type=none2str, default=None)
