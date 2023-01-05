@@ -11,6 +11,7 @@ import random
 import logging
 from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo
 import torch.nn.functional as F
+import foolbox as fb
 
 
 class LabelSmoothingLoss(torch.nn.Module):
@@ -252,3 +253,28 @@ class LayerHook:
                 self.storage = out[0].detach().cpu()
         self.hook_handle = module.register_forward_hook(hook)
 
+
+def adv_attack(model, fb_attack, attack_extras, x, y, dataset, device):
+    preprocessing = dict(mean=dataset.mean, std=dataset.std, axis=-3)
+    
+    std = torch.tensor(dataset.std).view(-1, 1, 1).to(device)
+    mean = torch.tensor(dataset.mean).view(-1, 1, 1).to(device)
+    
+    fmodel = fb.PyTorchModel(model, bounds=(0, 1), device=device, preprocessing=preprocessing)
+    
+    _, adv_c, success = fb_attack(fmodel, (x * std) + mean, y, *attack_extras)
+    
+    return (adv_c - mean) / std, success
+
+
+def eval_adv(model, attack, attack_extras, dataset, loader, device):
+    perturbed = 0
+    total = 0
+    for x, y in loader:
+        x = x.to(device)
+        y = y.to(device)
+        _, success = adv_attack(model, attack, attack_extras, x, y, dataset, device)
+        perturbed += success.float().sum(axis=-1).item()
+        total += len(y)
+
+    return 1 - (perturbed / total)
