@@ -361,6 +361,7 @@ def main(args):
 
     str_date_time = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     output_dir = output_dir.replace("%timestamp%", str_date_time)
+    vars(args)["output_dir"] = output_dir
 
     seed_everything(args.seed)
 
