@@ -155,7 +155,7 @@ class Trainer:
 
             if get_arg(self.args, "adv_train", False):
                 x = adv_attack(model=model, fb_attack=getattr(fb.attacks, self.args.adv_train_attack), 
-                    attack_extras=eval(self.args.adv_train_attack_extras), dataset=dataset, device=self.device)
+                    attack_extras=eval(self.args.adv_train_attack_extras), x=x, y=y, dataset=dataset, device=self.device)
 
             opt.zero_grad()
             with context():
