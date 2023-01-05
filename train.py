@@ -155,7 +155,7 @@ class Trainer:
 
             if get_arg(self.args, "adv_train", False):
                 x = adv_attack(model=model, fb_attack=getattr(fb.attacks, self.args.adv_train_attack), 
-                    attack_extra=eval(self.args.adv_train_attack_extras), dataset=dataset, device=self.device)
+                    attack_extras=eval(self.args.adv_train_attack_extras), dataset=dataset, device=self.device)
 
             opt.zero_grad()
             with context():
@@ -345,7 +345,7 @@ class Trainer:
 
             if self.args.adv_train:
                  metrics["val/robust_acc"] = eval_adv(model=self.model, fb_attack=getattr(fb.attacks, self.args.adv_val_attack), 
-                    attack_extra=eval(self.args.adv_val_attack_extras), dataset=dataset, device=self.device)
+                    attack_extras=eval(self.args.adv_val_attack_extras), dataset=dataset, device=self.device)
 
             if val_acc_max < metrics["val/acc"]:
                 val_acc_max = metrics["val/acc"]
