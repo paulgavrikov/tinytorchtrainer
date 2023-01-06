@@ -154,8 +154,11 @@ class Trainer:
                 x, y, target_a, target_b, lam = cutmix_batch(x, y, self.args.cutmix_beta)
 
             if get_arg(self.args, "adv_train", False):
-                x = adv_attack(model=model, fb_attack=getattr(fb.attacks, self.args.adv_train_attack), 
+                model.eval()
+                x, _ = adv_attack(model=model, fb_attack=getattr(fb.attacks, self.args.adv_train_attack)(), 
                     attack_extras=eval(self.args.adv_train_attack_extras), x=x, y=y, dataset=dataset, device=self.device)
+                x = x.detach()
+                model.train()
 
             opt.zero_grad()
             with context():
@@ -344,8 +347,8 @@ class Trainer:
             }
 
             if self.args.adv_train:
-                 metrics["val/robust_acc"] = eval_adv(model=self.model, fb_attack=getattr(fb.attacks, self.args.adv_val_attack), 
-                    attack_extras=eval(self.args.adv_val_attack_extras), dataset=dataset, device=self.device)
+                 metrics["val/rob_acc"] = eval_adv(model=self.model, fb_attack=getattr(fb.attacks, self.args.adv_val_attack)(), 
+                    attack_extras=eval(self.args.adv_val_attack_extras), loader=valloader, dataset=dataset, device=self.device)
 
             if val_acc_max < metrics["val/acc"]:
                 val_acc_max = metrics["val/acc"]
