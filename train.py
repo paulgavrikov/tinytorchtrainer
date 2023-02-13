@@ -104,8 +104,14 @@ class Trainer:
                     for pname, param in module.named_parameters():
                         logging.info(f"Freezing {mname}/{pname} {module}")
                         param.requires_grad = False
-
-        if get_arg(args, "freeze_layers") == "conv3x3":
+        
+        if get_arg(args, "freeze_layers") == "conv_spatial":
+            for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
+                if type(module) is torch.nn.Conv2d and np.prod(module.kernel_size) > 1:
+                    for pname, param in module.named_parameters():
+                        logging.info(f"Freezing {mname}/{pname} {module}")
+                        param.requires_grad = False
+        elif get_arg(args, "freeze_layers") == "conv3x3":
             for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
                 if type(module) is torch.nn.Conv2d and module.kernel_size == (3, 3):
                     for pname, param in module.named_parameters():
