@@ -261,19 +261,19 @@ def adv_attack(model, fb_attack, attack_extras, x, y, dataset, device):
     mean = torch.tensor(dataset.mean).view(-1, 1, 1).to(device)
     
     fmodel = fb.PyTorchModel(model, bounds=(0, 1), device=device, preprocessing=preprocessing)
-    
-    _, adv_c, success = fb_attack(fmodel, (x * std) + mean, y, *attack_extras)
+        
+    _, adv_c, success = fb_attack(fmodel, (x * std) + mean, y, **attack_extras)
     
     return (adv_c - mean) / std, success
 
 
-def eval_adv(model, attack, attack_extras, dataset, loader, device):
+def eval_adv(model, fb_attack, attack_extras, dataset, loader, device):
     perturbed = 0
     total = 0
     for x, y in loader:
         x = x.to(device)
         y = y.to(device)
-        _, success = adv_attack(model, attack, attack_extras, x, y, dataset, device)
+        _, success = adv_attack(model, fb_attack, attack_extras, x, y, dataset, device)
         perturbed += success.float().sum(axis=-1).item()
         total += len(y)
 
