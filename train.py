@@ -11,7 +11,8 @@ from tqdm import tqdm
 from datetime import datetime
 from rich.progress import track
 import foolbox as fb
-
+from texttable import Texttable
+import humanize
 
 from utils import (
     CSVLogger,
@@ -125,14 +126,18 @@ class Trainer:
 
         model.to(args.device)
 
-        logging.info("TRAINABLE PARAMETERS:")
-        for name, p in filter(lambda p: p[1].requires_grad, model.named_parameters()):
-            logging.info(f" > {name} {p.shape}")
-        logging.info(
-            f"TOTAL: {sum(list(map(lambda p: p.numel(), filter(lambda p: p.requires_grad, model.parameters()))))}"
-        )
-        
         logging.info(model)
+
+        total = np.sum([np.prod(p.shape) for p in model.parameters()])
+        learnable = np.sum([np.prod(p.shape) for p in model.parameters() if p.requires_grad])
+        
+        table = Texttable()
+        table.set_deco(Texttable.HEADER)
+        table.set_cols_dtype(["t", "t", "t"])
+        table.set_cols_align(["l", "r", "r"])
+        table.add_rows([["Parameter",    "Learnable", "Shape",],
+                        *[[n, p.requires_grad, list(p.shape)] for n, p in model.named_parameters()]])
+        logging.info("\n" + table.draw() + f"\n\nTotal Params:\t\t{humanize.metric(total)}\nLearnable Params:\t{humanize.metric(learnable)}\n")
 
         return model
 
