@@ -441,7 +441,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--dataset_dir", type=str, default="~/datasets/")
     parser.add_argument(
-        "--output_dir", type=str, default="output/%dataset%/%model%/version_%seed%"
+        "--output_dir", type=str, default="output/%timestamp%_%dataset%_%model%"
     )
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--cudnn_benchmark", type=str2bool, default=True)
