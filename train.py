@@ -13,6 +13,7 @@ from rich.progress import track
 import foolbox as fb
 from texttable import Texttable
 import humanize
+from autoattack import AutoAttack
 
 from utils import (
     CSVLogger,
@@ -22,6 +23,7 @@ from utils import (
     MockContextManager,
     MockScaler,
     LabelSmoothingLoss,
+    NormalizedModel,
     none2str,
     str2bool,
     prepend_key_prefix,
@@ -216,6 +218,58 @@ class Trainer:
 
         return {"acc": correct / total, "loss": total_loss / total}
 
+    def validate_aa(self, model, dataset, device, norm, eps, log_path):
+        def parse_aa_log(log_file):
+            results = {}
+            prev_attack = ""
+            with open(log_file, "r") as file:
+                for line in file.readlines():
+                    if "accuracy" in line:
+                        acc = float(line.split(": ")[1].replace("%", "").strip().split(" ")[0]) / 100
+
+                        tag = None
+                        if "initial accuracy" in line:
+                            tag = "clean"
+                        elif "after" in line:
+                            tag = line.split(":")[0].split(" ")[-1].strip()
+                            if len(prev_attack) == 0:
+                                prev_attack = tag
+                            else:
+                                prev_attack += "+" + tag
+
+                            tag = "AA-" + prev_attack
+                        else:
+                            tag = "AA-robust"
+
+                        results[tag] = acc
+
+            return results
+
+        loader = dataset.val_dataloader(loader_batch, saved_args.num_workers)
+        all_x = []
+        all_y = []
+        for x, y in loader:
+            all_x.append(x.to(trainer.device))
+            all_y.append(y.to(trainer.device))
+        all_x = torch.vstack(all_x)
+        all_y = torch.hstack(all_y)
+
+        model = NormalizedModel(trainer.model, dataset.mean, dataset.std).to(device)
+        model.eval()
+
+        all_x = all_x * model.std + model.mean  # unnormalize samples for AA
+
+        if os.path.isfile(log_path):
+            os.remove(log_path)
+
+        adversary = AutoAttack(model, norm=norm, eps=eps, log_path=log_path, device=device)
+        _ = adversary.run_standard_evaluation(all_x, all_y)
+        parse_aa_log(log_path)
+        results = {}
+        for k, v in parse_aa_log(log_path).items():
+            results[k] = v
+        return results
+
     def warmup_bn(self, model, trainloader, device):
         with torch.no_grad():
             model.train()
@@ -372,6 +426,11 @@ class Trainer:
             if output_dir:
                 self.checkpoint.save(epoch, self.steps, self.model, metrics)
 
+        if get_arg(self.args, "final_aa_eval", False):
+            log_path = os.path.join(output_dir, "autoattack.log")
+            aa_metrics = self.validate_aa(self.model, dataset, self.device, self.args.aa_norm, self.args.aa_eps, log_path):
+            self._log(prepend_key_prefix(aa_metrics, "aa/"))
+
 
 def main(args):
 
@@ -496,6 +555,9 @@ if __name__ == "__main__":
     parser.add_argument("--adv_train_attack_extras", type=none2str, default=None)
     parser.add_argument("--adv_val_attack", type=str)
     parser.add_argument("--adv_val_attack_extras", type=none2str, default=None)
+    parser.add_argument("--final_aa_eval", type=str2bool, default=False)
+    parser.add_argument("--aa_norm", type=str, default="Linf", choices=["Linf", "L2"])
+    parser.add_argument("--aa_eps", type=float, default=1/255.)
 
     # wandb
     parser.add_argument("--wandb_project", type=none2str, default=None)
