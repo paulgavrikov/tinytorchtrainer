@@ -63,7 +63,8 @@ class Trainer:
             self.model = Trainer.prepare_model(
                 args, args.model_in_channels, args.model_num_classes
             )
-            self.device = args.device
+        self.device = args.device
+        self.steps = 0
         self.args = args
         self.loggers = []
 
