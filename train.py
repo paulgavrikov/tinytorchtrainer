@@ -58,11 +58,12 @@ def load_trainer(args):
 
 
 class Trainer:
-    def __init__(self, args):
-        self.model = Trainer.prepare_model(
-            args, args.model_in_channels, args.model_num_classes
-        )
-        self.device = args.device
+    def __init__(self, args, skip_model_init=False):
+        if not skip_model_init:
+            self.model = Trainer.prepare_model(
+                args, args.model_in_channels, args.model_num_classes
+            )
+            self.device = args.device
         self.args = args
         self.loggers = []
 
