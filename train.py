@@ -428,7 +428,7 @@ class Trainer:
 
         if get_arg(self.args, "final_aa_eval", False):
             log_path = os.path.join(output_dir, "autoattack.log")
-            aa_metrics = self.validate_aa(self.model, dataset, self.device, self.args.aa_norm, self.args.aa_eps, log_path):
+            aa_metrics = self.validate_aa(self.model, dataset, self.device, self.args.aa_norm, self.args.aa_eps, log_path)
             self._log(prepend_key_prefix(aa_metrics, "aa/"))
 
 
