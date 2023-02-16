@@ -218,7 +218,7 @@ class Trainer:
 
         return {"acc": correct / total, "loss": total_loss / total}
 
-    def validate_aa(self, model, dataset, device, norm, eps, log_path):
+    def validate_aa(self, model, dataset, device, norm, eps, log_path, batch_size, num_workers):
         def parse_aa_log(log_file):
             results = {}
             prev_attack = ""
@@ -245,24 +245,24 @@ class Trainer:
 
             return results
 
-        loader = dataset.val_dataloader(loader_batch, saved_args.num_workers)
+        loader = dataset.val_dataloader(batch_size, num_workers)
         all_x = []
         all_y = []
         for x, y in loader:
-            all_x.append(x.to(trainer.device))
-            all_y.append(y.to(trainer.device))
+            all_x.append(x.to(device))
+            all_y.append(y.to(device))
         all_x = torch.vstack(all_x)
         all_y = torch.hstack(all_y)
 
-        model = NormalizedModel(trainer.model, dataset.mean, dataset.std).to(device)
-        model.eval()
+        norm_model = NormalizedModel(model, dataset.mean, dataset.std).to(device)
+        norm_model.eval()
 
-        all_x = all_x * model.std + model.mean  # unnormalize samples for AA
+        all_x = all_x * norm_model.std + norm_model.mean  # unnormalize samples for AA
 
         if os.path.isfile(log_path):
             os.remove(log_path)
 
-        adversary = AutoAttack(model, norm=norm, eps=eps, log_path=log_path, device=device)
+        adversary = AutoAttack(norm_model, norm=norm, eps=eps, log_path=log_path, device=device)
         _ = adversary.run_standard_evaluation(all_x, all_y)
         parse_aa_log(log_path)
         results = {}
@@ -428,7 +428,7 @@ class Trainer:
 
         if get_arg(self.args, "final_aa_eval", False):
             log_path = os.path.join(output_dir, "autoattack.log")
-            aa_metrics = self.validate_aa(self.model, dataset, self.device, self.args.aa_norm, self.args.aa_eps, log_path)
+            aa_metrics = self.validate_aa(self.model, dataset, self.device, self.args.aa_norm, self.args.aa_eps, log_path, self.args.batch_size, self.args.num_workers)
             self._log(prepend_key_prefix(aa_metrics, "aa/"))
 
 
