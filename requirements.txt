@@ -7,4 +7,5 @@ pynvml
 timm
 git+https://github.com/RobustBench/robustbench.git@v1.0#egg=robustbench
 texttable
-humanize
+humanize>=4.0.0
+rich
