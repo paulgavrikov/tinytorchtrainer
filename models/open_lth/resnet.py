@@ -37,11 +37,14 @@ class ResNet(nn.Module):
             super().__init__()
 
             stride = 2 if downsample else 1
+            self.downsample = downsample
             
             self.conv1 = ResNet.Block.make_conv(f_in, f_out, stride, **conv_args)
             self.bn1 = nn.BatchNorm2d(f_out)
             self.conv2 = ResNet.Block.make_conv(f_out, f_out, 1, **conv_args)
             self.bn2 = nn.BatchNorm2d(f_out)
+
+            self.force_no_padding = conv_args.get("force_no_padding", False)
 
             self.activation = activation_fn()
 
@@ -62,6 +65,12 @@ class ResNet(nn.Module):
             
             out = self.conv2(out)
             out = self.bn2(out)
+
+            if self.force_no_padding:
+              if self.downsample:
+                out = nn.functional.pad(out, (2, 1, 2, 1))
+              else:
+                out = nn.functional.pad(out, (2, 2, 2, 2))
 
             out += self.shortcut(x)
             return self.activation(out)
