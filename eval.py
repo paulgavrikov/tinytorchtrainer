@@ -4,6 +4,7 @@ import argparse
 from train import Trainer
 import data
 import os
+from utils import MockContextManager, MockScaler
 
 
 def main(args):
@@ -26,7 +27,7 @@ def main(args):
 
     criterion = torch.nn.CrossEntropyLoss()
 
-    metrics = trainer.validate(trainer.model, dataset.val_dataloader(saved_args.batch_size, saved_args.num_workers), criterion, trainer.device)
+    metrics = trainer.validate(trainer.model, dataset.val_dataloader(saved_args.batch_size, saved_args.num_workers), criterion, trainer.device, MockScaler(), MockContextManager)
     print(metrics)
 
 
