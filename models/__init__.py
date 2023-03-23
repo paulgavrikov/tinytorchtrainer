@@ -14,6 +14,7 @@ from .lowresalexnet import lowres_alexnet
 from .lowreslenet import lowres_lenet5
 from .convnext import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
 from .open_lth.resnet import ResNet
+from .cifardensenet import densenet40_12, densenet40_12_bc
 
 import torchvision.models
 from functools import partial
@@ -66,8 +67,11 @@ all_classifiers = {
     "convnext_small": convnext_small, 
     "convnext_base": convnext_base, 
     "convnext_large": convnext_large, 
-    "convnext_xlarge": convnext_xlarge
+    "convnext_xlarge": convnext_xlarge,
+    "densenet40_12": densenet40_12,
+    "densenet40_12_bc": densenet40_12_bc,
 }
+
 
 def torchvision_loader(name, in_channels, num_classes):
     assert in_channels == 3
@@ -75,7 +79,7 @@ def torchvision_loader(name, in_channels, num_classes):
 
 
 def get_model(name):
-    if name.startswith("lowres_") or name.startswith("convnext_"):
+    if name.startswith("lowres_") or name.startswith("convnext_") or name.startswith("densenet"):
         return all_classifiers.get(name)
     elif name.startswith("torchvision_"):
         return partial(torchvision_loader, name=name.replace("torchvision_", ""))
