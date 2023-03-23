@@ -22,4 +22,4 @@ Scripts:
 
 # Credits
 
-Code partially taken from https://github.com/huyvnphan/PyTorch_CIFAR10, https://github.com/1M50RRY/resnet18-preact, https://github.com/pytorch/vision/.
+Code partially taken from https://github.com/huyvnphan/PyTorch_CIFAR10, https://github.com/1M50RRY/resnet18-preact, https://github.com/pytorch/vision/, https://github.com/andreasveit/densenet-pytorch/.
