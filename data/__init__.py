@@ -9,7 +9,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.data import Dataset
 from torchvision import transforms
-from torchvision.datasets import CIFAR10, CIFAR100, MNIST, KMNIST, FashionMNIST, ImageFolder, SVHN, OxfordIIITPet, Flowers102
+from torchvision.datasets import CIFAR10, CIFAR100, MNIST, KMNIST, FashionMNIST, ImageFolder, SVHN, OxfordIIITPet, Flowers102, DTD
 try:
     from torchvision.datasets import SUN397
 except:
@@ -892,6 +892,60 @@ class OxfordIIITPetData():
         return dataloader
 
 
+class DTDData():
+    def __init__(self, root_dir):
+        super().__init__()
+        self.root_dir = root_dir
+        self.mean = (0.5347, 0.4772, 0.4275)
+        self.std = (0.2624, 0.2535, 0.2612)
+        self.num_classes = 47
+        self.in_channels = 3
+        self.train_transform = transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+        self.val_transform = transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std),
+            ]
+        )
+
+    def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
+        dataset = DTD(root=self.root_dir, split="train", transform=self.train_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
+
+    def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
+        dataset = DTD(root=self.root_dir, split="val", transform=self.val_transform, download=True)
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=shuffle,
+            drop_last=drop_last,
+            pin_memory=pin_memory,
+            **kwargs
+        )
+        return dataloader
+
+
 all_datasets = {
     "cifar10": CIFAR10Data,
     "cifar100": CIFAR100Data,
@@ -906,6 +960,7 @@ all_datasets = {
     "sun397": SUN397Data,
     "flowers102": Flowers102Data,
     "oxfordiiitpet": OxfordIIITPetData,
+    "dtd": DTDData
 }
 
 
