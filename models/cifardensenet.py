@@ -4,6 +4,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import logging
 
 
 class BasicBlock(nn.Module):
@@ -92,8 +93,13 @@ class DenseNet(nn.Module):
         reduction=0.5,
         bottleneck=True,
         dropRate=0.0,
+        activation_fn=None
     ):
         super(DenseNet, self).__init__()
+
+        if activation_fn:
+            logging.warning(f"Ignoring passed {activation_fn.__name__} to DenseNet.")
+
         in_planes = 2 * growth_rate
         n = (depth - 4) / 3
         if bottleneck:
