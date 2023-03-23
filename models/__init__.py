@@ -16,7 +16,6 @@ from .convnext import convnext_tiny, convnext_small, convnext_base, convnext_lar
 from .open_lth.resnet import ResNet
 from .cifardensenet import densenet40_12, densenet40_12_bc
 
-import torchvision.models
 from functools import partial
 
 all_classifiers = {
@@ -74,8 +73,15 @@ all_classifiers = {
 
 
 def torchvision_loader(name, in_channels, num_classes):
-    assert in_channels == 3
+    assert in_channels == 3, "TorchVision only supports 3-channel inputs"
+    import torchvision.models
     return torchvision.models.__dict__[name](num_classes=num_classes, pretrained=False)
+
+
+def timm_loader(name, in_channels, num_classes):
+    assert in_channels == 3, "TIMM only supports 3-channel inputs"
+    import timm
+    return timm.create_model(model_name=name, num_classes=num_classes, pretrained=False)
 
 
 def get_model(name):
@@ -83,5 +89,7 @@ def get_model(name):
         return all_classifiers.get(name)
     elif name.startswith("torchvision_"):
         return partial(torchvision_loader, name=name.replace("torchvision_", ""))
+    elif name.startswith("timm_"):
+        return partial(timm_loader, name=name.replace("timm_", ""))
     elif name.startswith("openlth_"):
         return partial(ResNet.get_model_from_name, name=name.replace("openlth_", ""))
