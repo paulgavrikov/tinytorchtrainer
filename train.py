@@ -87,19 +87,11 @@ class Trainer:
             if "state_dict" in state:
                 state = state["state_dict"]
 
-            model.load_state_dict(state)
+            model.load_state_dict(state, strict=False)
 
         if get_arg(args, "reset_head"):
             logging.info("Resetting head")
             model.fc.reset_parameters()
-            
-        if get_arg(args, "replace_fc"):
-            logging.info("Replacing head")
-            # Replace only the last element from the sequential fc
-            if isinstance(model.fc, torch.nn.Sequential):
-                model.fc[-1] = torch.nn.Linear(model.fc[-1].in_features, num_classes)
-            else:
-                model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
 
         if get_arg(args, "reset_all_but_conv2d_3x3"):
             for mname, module in filter(lambda t: len(list(t[1].children())) == 0, model.named_modules()):
@@ -521,7 +513,6 @@ if __name__ == "__main__":
 
     parser.add_argument("--load_checkpoint", type=none2str, default=None)
     parser.add_argument("--reset_head", type=str2bool, default=False)
-    parser.add_argument("--replace_head", type=str2bool, default=False)
     parser.add_argument("--reset_all_but_conv2d_3x3", type=str2bool, default=False)
     parser.add_argument("--freeze_conv2d_3x3", type=str2bool, default=False)
     parser.add_argument("--freeze_all_but_bn", type=str2bool, default=False)
