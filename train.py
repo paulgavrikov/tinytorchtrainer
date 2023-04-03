@@ -182,6 +182,9 @@ class Trainer:
                     loss = criterion(y_pred, y)
                 else:
                     loss = cutmix_loss(y_pred, target_a, target_b, lam)
+
+            if get_arg(self.args, "double_gd", 0) > 0:
+                loss = loss + self.args.double_gd * (loss ** 2)
             scaler.scale(loss).backward()
 
             batch_loss = loss.item() * len(y)
@@ -546,6 +549,8 @@ if __name__ == "__main__":
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--nesterov", type=str2bool, default=True)
     parser.add_argument("--freeze_layers", type=none2str, default=None)
+
+    parser.add_argument("--double_gd", type=float, default=0)
 
     parser.add_argument("--seed", type=int, default=0)
 
