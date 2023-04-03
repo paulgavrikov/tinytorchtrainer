@@ -1,3 +1,5 @@
+import logging
+
 from .lowresdensenet import lowres_densenet121, lowres_densenet161, lowres_densenet169, lowres_densenet201, lowres_densenet264
 from .lowresgooglenet import lowres_googlenet
 from .lowresinception import lowres_inception_v3
@@ -72,14 +74,16 @@ all_classifiers = {
 }
 
 
-def torchvision_loader(name, in_channels, num_classes):
+def torchvision_loader(name, in_channels, num_classes, **kwargs):
     assert in_channels == 3, "TorchVision only supports 3-channel inputs"
+    logging.warn(f"Ignoring {kwargs}")
     import torchvision.models
     return torchvision.models.__dict__[name](num_classes=num_classes, pretrained=False)
 
 
-def timm_loader(name, in_channels, num_classes):
+def timm_loader(name, in_channels, num_classes, **kwargs):
     assert in_channels == 3, "TIMM only supports 3-channel inputs"
+    logging.warn(f"Ignoring {kwargs}")
     import timm
     return timm.create_model(model_name=name, num_classes=num_classes, pretrained=False)
 
