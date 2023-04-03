@@ -9,7 +9,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.data import Dataset
 from torchvision import transforms
-from torchvision.datasets import CIFAR10, CIFAR100, MNIST, KMNIST, FashionMNIST, ImageFolder, SVHN, OxfordIIITPet, Flowers102, DTD
+from torchvision.datasets import CIFAR10, CIFAR100, MNIST, KMNIST, FashionMNIST, ImageFolder, SVHN, OxfordIIITPet, Flowers102, DTD, ImageNet
 try:
     from torchvision.datasets import SUN397
 except:
@@ -27,50 +27,7 @@ class CloneProgress(RemoteProgress):
         pbar.update(cur_count)
 
 
-class ImageNet1k(Dataset):
-    def __init__(self, root, split, transform=None):
-        self.samples = []
-        self.targets = []
-        self.transform = transform
-        self.syn_to_class = {}
-
-        with open(os.path.join(root, "imagenet_class_index.json"), "rb") as f:
-            json_file = json.load(f)
-            for class_id, v in json_file.items():
-                self.syn_to_class[v[0]] = int(class_id)
-                
-        with open(os.path.join(root, "ILSVRC2012_val_labels.json"), "rb") as f:
-            self.val_to_syn = json.load(f)
-
-        samples_dir = os.path.join(root, "ILSVRC/Data/CLS-LOC", split)
-        for entry in os.listdir(samples_dir):
-            if split == "train":
-                syn_id = entry
-                target = self.syn_to_class[syn_id]
-                syn_folder = os.path.join(samples_dir, syn_id)
-                for sample in os.listdir(syn_folder):
-                    sample_path = os.path.join(syn_folder, sample)
-                    self.samples.append(sample_path)
-                    self.targets.append(target)
-            elif split == "val":
-                syn_id = self.val_to_syn[entry]
-                target = self.syn_to_class[syn_id]
-                sample_path = os.path.join(samples_dir, entry)
-                self.samples.append(sample_path)
-                self.targets.append(target)
-            
-
-    def __len__(self):
-        return len(self.samples)
-
-    def __getitem__(self, idx):
-        x = Image.open(self.samples[idx]).convert("RGB")
-        if self.transform:
-            x = self.transform(x)
-        return x, self.targets[idx]
-
-
-class ImageNet1kData():
+class ImageNetData():
     def __init__(self, root_dir):
         super().__init__()
         self.root_dir = root_dir
@@ -96,7 +53,7 @@ class ImageNet1kData():
         )
 
     def train_dataloader(self, batch_size, num_workers, shuffle=True, drop_last=False, pin_memory=True, **kwargs):
-        dataset = ImageNet1k(root=self.root_dir, split="train", transform=self.train_transform)
+        dataset = ImageNet(root=self.root_dir, split="train", transform=self.train_transform)
         dataloader = DataLoader(
             dataset,
             batch_size=batch_size,
@@ -109,7 +66,7 @@ class ImageNet1kData():
         return dataloader
 
     def val_dataloader(self, batch_size, num_workers, shuffle=False, drop_last=False, pin_memory=True, **kwargs):
-        dataset = ImageNet1k(root=self.root_dir, split="val", transform=self.val_transform)
+        dataset = ImageNet(root=self.root_dir, split="val", transform=self.val_transform)
         dataloader = DataLoader(
             dataset,
             batch_size=batch_size,
@@ -953,7 +910,7 @@ all_datasets = {
     "kmnist": KMNISTData,
     "fashionmnist": FashionMNISTData,
     "cinic10": CINIC10Data,
-    "imagenet1k": ImageNet1kData,
+    "imagenet": ImageNetData,
     "svhn": SVHNData,
     "tinyimagenet": TinyImageNetData,
     "grocerystore": GroceryStoreData,
