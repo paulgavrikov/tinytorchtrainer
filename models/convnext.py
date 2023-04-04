@@ -10,7 +10,6 @@ import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from timm.models.layers import trunc_normal_, DropPath
 
 
 class Block(nn.Module):
@@ -26,6 +25,8 @@ class Block(nn.Module):
     """
     def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6, kernel_size=7):
         super().__init__()
+        from timm.models.layers import DropPath
+
         self.dwconv = nn.Conv2d(dim, dim, kernel_size=kernel_size, padding=kernel_size // 2, groups=dim) # depthwise conv
         self.norm = LayerNorm(dim, eps=1e-6)
         self.pwconv1 = nn.Linear(dim, 4 * dim) # pointwise/1x1 convs, implemented with linear layers
@@ -108,6 +109,8 @@ class ConvNeXt(nn.Module):
         self.fc.bias.data.mul_(head_init_scale)
 
     def _init_weights(self, m):
+        from timm.models.layers import trunc_normal_
+
         if isinstance(m, (nn.Conv2d, nn.Linear)):
             trunc_normal_(m.weight, std=.02)
             nn.init.constant_(m.bias, 0)
