@@ -335,7 +335,7 @@ class Trainer:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.opt, T_max=self.args.max_epochs * steps_per_epoch
             )
-        elif self.args.schedule is None:
+        elif self.args.scheduler is None:
             self.scheduler = None      
         else:
             raise NotImplementedError()
